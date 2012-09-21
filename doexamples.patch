@@ -1,0 +1,28 @@
+diff -rux '*~' qt5-qtwayland/examples/examples.pro qt5-qtwayland-doexamples/examples/examples.pro
+--- qt5-qtwayland/examples/examples.pro	2012-06-18 21:52:07.000000000 +0200
++++ qt5-qtwayland-doexamples/examples/examples.pro	2012-06-24 08:58:50.175258363 +0200
+@@ -5,6 +5,4 @@
+     SUBDIRS += qwidget-compositor
+ }
+ 
+-contains(QT_CONFIG, quick) {
+-    SUBDIRS += qml-compositor
+-}
++SUBDIRS += qml-compositor
+diff -rux '*~' qt5-qtwayland/qtwayland.pro qt5-qtwayland-doexamples/qtwayland.pro
+--- qt5-qtwayland/qtwayland.pro	2012-06-18 21:52:07.000000000 +0200
++++ qt5-qtwayland-doexamples/qtwayland.pro	2012-06-24 08:58:34.647228455 +0200
+@@ -7,9 +7,9 @@
+ module_qtwayland_examples.subdir = examples
+ module_qtwayland_examples.target = module-qtwayland-examples
+ module_qtwayland_examples.depends = module_qtwayland_src
+-!contains(QT_BUILD_PARTS,examples) {
+-    module_qtwayland_examples.CONFIG = no_default_target no_default_install
+-}
++#!contains(QT_BUILD_PARTS,examples) {
++#    module_qtwayland_examples.CONFIG = no_default_target no_default_install
++#}
+ 
+ module_qtwayland_tests.subdir = tests
+ module_qtwayland_tests.target = module-qtwayland-tests
+Only in qt5-qtwayland-doexamples: qtwayland.pro.orig

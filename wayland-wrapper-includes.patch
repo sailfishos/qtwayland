@@ -1,0 +1,13 @@
+diff --git a/src/compositor/wayland_wrapper/wlcompositor.h b/src/compositor/wayland_wrapper/wlcompositor.h
+index 6f357ab..e64c3f3 100644
+--- a/src/compositor/wayland_wrapper/wlcompositor.h
++++ b/src/compositor/wayland_wrapper/wlcompositor.h
+@@ -42,6 +42,8 @@
+ #define WL_COMPOSITOR_H
+ 
+ #include <QtCore/QSet>
++#include <QtGui/QWindow>
++#include <QtCore/QList>
+ 
+ #include "wloutput.h"
+ #include "wldisplay.h"
