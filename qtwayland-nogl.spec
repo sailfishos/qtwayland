@@ -1,5 +1,5 @@
 %define _qtmodule_snapshot_version 5.0.0-beta1
-%define _qtwayland_variant wayland_egl
+%define _qtwayland_variant nogl
 Name:       qt5-qtwayland-%{_qtwayland_variant}
 Summary:    Qt Wayland compositor, %{_qtwayland_variant} variant
 Version:    5.0.0~beta1
