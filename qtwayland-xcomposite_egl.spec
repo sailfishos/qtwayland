@@ -1,5 +1,5 @@
 %define _qtmodule_snapshot_version 0.0-git803.g4323bf663ea131897857ff564943b17e914ccd9b
-%define _qtwayland_variant nogl
+%define _qtwayland_variant xcomposite_egl
 Name:       qt5-qtwayland-%{_qtwayland_variant}
 Summary:    Qt Wayland compositor, %{_qtwayland_variant} variant
 Version:    0.0~git803.g4323bf663ea131897857ff564943b17e914ccd9b

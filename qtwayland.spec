@@ -1,17 +1,18 @@
-%define _qtmodule_snapshot_version 5.0.0-beta1
+%define _qtmodule_snapshot_version 0.0-git803.g4323bf663ea131897857ff564943b17e914ccd9b
 %define _qtwayland_variant wayland_egl
 Name:       qt5-qtwayland-%{_qtwayland_variant}
 Summary:    Qt Wayland compositor, %{_qtwayland_variant} variant
-Version:    5.0.0~beta1
+Version:    0.0~git803.g4323bf663ea131897857ff564943b17e914ccd9b
 Release:    1%{?dist}
 Group:      Qt/Qt
 License:    LGPLv2.1 with exception or GPLv3
 URL:        http://qt.nokia.com
 #Source0:    %{name}-%{version}.tar.xz
 Source0:    qtwayland-opensource-src-%{_qtmodule_snapshot_version}.tar.xz
-Patch0:    0001-Fix-modular-build.patch
-Patch1:    force-glib.patch
-Patch2:    doexamples.patch
+Patch0:    force-glib.patch   
+Patch1:    fixeglfs.patch
+Patch2:    fullscreen.patch
+Patch3:    fixnogl.patch
 BuildRequires:  qt5-qtcore-devel
 BuildRequires:  qt5-qtgui-devel
 BuildRequires:  qt5-qtwidgets-devel
@@ -19,15 +20,17 @@ BuildRequires:  qt5-qtopengl-devel
 BuildRequires:  qt5-qtplatformsupport-devel
 BuildRequires:  qt5-qtdeclarative-devel
 BuildRequires:  qt5-qtdeclarative-qtquick-devel
-BuildRequires:  pkgconfig(QtV8)
+BuildRequires:  qt5-qtv8-devel
 BuildRequires:  pkgconfig(wayland-client)
 %if "%{_qtwayland_variant}" == "wayland_egl"
 BuildRequires:  pkgconfig(wayland-egl)
 %endif
-BuildRequires:  pkgconfig(glib-2.0)
-# BuildRequires:  libX11-devel
-# BuildRequires:  libXcomposite-devel
+%if "%{_qtwayland_variant}" == "xcomposite_egl"
+BuildRequires:  pkgconfig(xcomposite)
+%endif
+
 BuildRequires:  libxkbcommon-devel
+BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  libffi-devel
 BuildRequires:  fdupes
 
@@ -68,13 +71,16 @@ This package contains the Qt wayland compositor examples for %{_qtwayland_varian
 %prep
 %setup -q -n qtwayland-opensource-src-%{_qtmodule_snapshot_version}
 %patch0 -p1
-%patch1 -p1
+%patch1 -p1 
 %patch2 -p1
+%patch3 -p1
 
 %build
 export QT_WAYLAND_GL_CONFIG=%{_qtwayland_variant}
 export QTDIR=/usr/share/qt5
-qmake
+
+qmake "QT_BUILD_PARTS += examples"
+
 make %{?_smp_flags}
 
 %install
@@ -104,19 +110,19 @@ rm -rf %{buildroot}/%{_includedir}/qt5/Qt
 
 %files
 %defattr(-,root,root,-)
-%{_libdir}/libQtCompositor.so.5
-%{_libdir}/libQtCompositor.so.5.*
+%{_libdir}/libQt5Compositor.so.5
+%{_libdir}/libQt5Compositor.so.5.*
 %{_libdir}/qt5/plugins/platforms/libqwayland.so
 
 %files devel
 %defattr(-,root,root,-)
-%{_libdir}/libQtCompositor.so
+%{_libdir}/libQt5Compositor.so
 %{_includedir}/qt5/*
-%{_libdir}/libQtCompositor.la
-%{_libdir}/libQtCompositor.prl
-%{_libdir}/pkgconfig/QtCompositor.pc
+%{_libdir}/libQt5Compositor.la
+%{_libdir}/libQt5Compositor.prl
+%{_libdir}/pkgconfig/Qt5Compositor.pc
 %{_libdir}/cmake/Qt5Compositor/*
-%{_datadir}/qt5/mkspecs/modules/qt_compositor.pri
+%{_datadir}/qt5/mkspecs/modules/qt_lib_compositor.pri
 
 %files examples
 %defattr(-,root,root,-)

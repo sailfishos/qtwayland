@@ -1,0 +1,23 @@
+diff -ru qtwayland-opensource-src-0.0-git803.g4323bf663ea131897857ff564943b17e914ccd9b/src/compositor/wayland_wrapper/wlsurfacebuffer.cpp qtwayland-opensource-src-0.0-git803.g4323bf663ea131897857ff564943b17e914ccd9b-fixnogl/src/compositor/wayland_wrapper/wlsurfacebuffer.cpp
+--- qtwayland-opensource-src-0.0-git803.g4323bf663ea131897857ff564943b17e914ccd9b/src/compositor/wayland_wrapper/wlsurfacebuffer.cpp	2012-12-13 22:46:18.000000000 +0100
++++ qtwayland-opensource-src-0.0-git803.g4323bf663ea131897857ff564943b17e914ccd9b-fixnogl/src/compositor/wayland_wrapper/wlsurfacebuffer.cpp	2013-01-23 09:24:06.381571160 +0100
+@@ -62,7 +62,9 @@
+     , m_page_flipper_has_buffer(false)
+     , m_is_displayed(false)
+     , m_texture(0)
++#ifdef QT_COMPOSITOR_WAYLAND_GL
+     , m_guard(0)
++#endif
+     , m_is_shm_resolved(false)
+     , m_is_shm(false)
+ {
+@@ -78,7 +80,9 @@
+ {
+     m_buffer = buffer;
+     m_texture = 0;
++#ifdef QT_COMPOSITOR_WAYLAND_GL
+     m_guard = 0;
++#endif
+     m_is_registered_for_buffer = true;
+     m_surface_has_buffer = true;
+     m_page_flipper_has_buffer = false;

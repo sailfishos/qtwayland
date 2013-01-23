@@ -1,0 +1,14 @@
+diff -ru qtwayland-opensource-src-0.0-git4323bf663ea131897857ff564943b17e914ccd9b/examples/qml-compositor/main.cpp qtwayland-fixreso/examples/qml-compositor/main.cpp
+--- qtwayland-opensource-src-0.0-git4323bf663ea131897857ff564943b17e914ccd9b/examples/qml-compositor/main.cpp	2012-12-13 21:46:18.000000000 +0000
++++ qtwayland-fixreso/examples/qml-compositor/main.cpp	2012-12-31 16:39:15.827184780 +0000
+@@ -153,8 +153,8 @@
+     QmlCompositor compositor;
+     compositor.setTitle(QLatin1String("QML Compositor"));
+     compositor.setGeometry(0, 0, 1024, 768);
+-    compositor.show();
+-
++    compositor.showFullScreen();
++    
+     compositor.rootContext()->setContextProperty("compositor", &compositor);
+ 
+     QObject::connect(&compositor, SIGNAL(windowAdded(QVariant)), compositor.rootObject(), SLOT(windowAdded(QVariant)));
