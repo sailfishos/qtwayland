@@ -13,6 +13,7 @@ Patch0:    force-glib.patch
 Patch1:    fixeglfs.patch
 Patch2:    fullscreen.patch
 Patch3:    fixnogl.patch
+Patch4:    nogl-everywhere.patch
 BuildRequires:  qt5-qtcore-devel
 BuildRequires:  qt5-qtgui-devel
 BuildRequires:  qt5-qtwidgets-devel
@@ -74,6 +75,7 @@ This package contains the Qt wayland compositor examples for %{_qtwayland_varian
 %patch1 -p1 
 %patch2 -p1
 %patch3 -p1
+%patch4 -p1
 
 %build
 export QT_WAYLAND_GL_CONFIG=%{_qtwayland_variant}
