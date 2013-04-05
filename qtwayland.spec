@@ -81,7 +81,7 @@ This package contains the Qt wayland compositor examples for %{_qtwayland_varian
 export QT_WAYLAND_GL_CONFIG=%{_qtwayland_variant}
 export QTDIR=/usr/share/qt5
 
-qmake "QT_BUILD_PARTS += examples"
+qmake -qt=5 "QT_BUILD_PARTS += examples"
 
 make %{?_smp_flags}
 

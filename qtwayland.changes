@@ -1,3 +1,6 @@
+* Fri Apr 05 2013 Carsten Munk <carsten.munk@jollamobile.com> - 0.0-git803.g4323bf663ea131897857ff564943b17e914ccd9b
+- Move to use qmake -qt=5
+
 * Wed Feb 06 2013 Carsten Munk <carsten.munk@jollamobile.com> - 0.0-git803.g4323bf663ea131897857ff564943b17e914ccd9b
 - Fix nogl build and make examples actually be nogl too. 
 
