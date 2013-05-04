@@ -1,0 +1,28 @@
+From 947c208f0337b7709a905439aed2157a83dbb79c Mon Sep 17 00:00:00 2001
+From: Carsten Munk <carsten.munk@jollamobile.com>
+Date: Wed, 24 Apr 2013 07:15:33 +0000
+Subject: [PATCH 2/3] Fullscreen always
+
+Signed-off-by: Carsten Munk <carsten.munk@jollamobile.com>
+---
+ examples/qml-compositor/main.cpp |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/examples/qml-compositor/main.cpp b/examples/qml-compositor/main.cpp
+index d481a25..2bfe371 100644
+--- a/examples/qml-compositor/main.cpp
++++ b/examples/qml-compositor/main.cpp
+@@ -159,8 +159,8 @@ int main(int argc, char *argv[])
+     QmlCompositor compositor;
+     compositor.setTitle(QLatin1String("QML Compositor"));
+     compositor.setGeometry(0, 0, 1024, 768);
+-    compositor.show();
+-
++    compositor.showFullScreen();
++    
+     compositor.rootContext()->setContextProperty("compositor", &compositor);
+ 
+     QObject::connect(&compositor, SIGNAL(windowAdded(QVariant)), compositor.rootObject(), SLOT(windowAdded(QVariant)));
+-- 
+1.7.10.3
+

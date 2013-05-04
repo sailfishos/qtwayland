@@ -1,23 +1,36 @@
-diff -ru qtwayland-opensource-src-0.0-git803.g4323bf663ea131897857ff564943b17e914ccd9b/src/compositor/wayland_wrapper/wlsurfacebuffer.cpp qtwayland-opensource-src-0.0-git803.g4323bf663ea131897857ff564943b17e914ccd9b-fixnogl/src/compositor/wayland_wrapper/wlsurfacebuffer.cpp
---- qtwayland-opensource-src-0.0-git803.g4323bf663ea131897857ff564943b17e914ccd9b/src/compositor/wayland_wrapper/wlsurfacebuffer.cpp	2012-12-13 22:46:18.000000000 +0100
-+++ qtwayland-opensource-src-0.0-git803.g4323bf663ea131897857ff564943b17e914ccd9b-fixnogl/src/compositor/wayland_wrapper/wlsurfacebuffer.cpp	2013-01-23 09:24:06.381571160 +0100
-@@ -62,7 +62,9 @@
-     , m_page_flipper_has_buffer(false)
-     , m_is_displayed(false)
-     , m_texture(0)
-+#ifdef QT_COMPOSITOR_WAYLAND_GL
-     , m_guard(0)
-+#endif
-     , m_is_shm_resolved(false)
-     , m_is_shm(false)
- {
-@@ -78,7 +80,9 @@
- {
-     m_buffer = buffer;
-     m_texture = 0;
-+#ifdef QT_COMPOSITOR_WAYLAND_GL
-     m_guard = 0;
-+#endif
-     m_is_registered_for_buffer = true;
-     m_surface_has_buffer = true;
-     m_page_flipper_has_buffer = false;
+diff -ru qtwayland-opensource-src-0.0-git855.e5601d283c/src/plugins/platforms/platforms.pro qtwayland-fixnogl/src/plugins/platforms/platforms.pro
+--- qtwayland-opensource-src-0.0-git855.e5601d283c/src/plugins/platforms/platforms.pro	2013-04-16 16:32:44.000000000 +0200
++++ qtwayland-fixnogl/src/plugins/platforms/platforms.pro	2013-05-04 18:54:37.771447989 +0200
+@@ -2,6 +2,8 @@
+ CONFIG+=ordered
+ SUBDIRS += wayland_common
+ 
++isEmpty(QT_WAYLAND_GL_CONFIG):QT_WAYLAND_GL_CONFIG = $$(QT_WAYLAND_GL_CONFIG)
++
+ equals(QT_WAYLAND_GL_CONFIG, nogl) {
+     SUBDIRS += qwayland-nogl
+ } else {
+diff -ru qtwayland-opensource-src-0.0-git855.e5601d283c/src/plugins/platforms/wayland_common/wayland_common.pri qtwayland-fixnogl/src/plugins/platforms/wayland_common/wayland_common.pri
+--- qtwayland-opensource-src-0.0-git855.e5601d283c/src/plugins/platforms/wayland_common/wayland_common.pri	2013-04-16 16:32:44.000000000 +0200
++++ qtwayland-fixnogl/src/plugins/platforms/wayland_common/wayland_common.pri	2013-05-04 19:13:05.559645702 +0200
+@@ -1,6 +1,8 @@
+ QT += core-private gui-private platformsupport-private
+ CONFIG += link_pkgconfig qpa/genericunixfontdatabase
+ 
++isEmpty(QT_WAYLAND_GL_CONFIG):QT_WAYLAND_GL_CONFIG = $$(QT_WAYLAND_GL_CONFIG)
++
+ !equals(QT_WAYLAND_GL_CONFIG, nogl) {
+     DEFINES += QT_WAYLAND_GL_SUPPORT
+ }
+diff -ru qtwayland-opensource-src-0.0-git855.e5601d283c/src/plugins/platforms/wayland_common/wayland_common.pro qtwayland-fixnogl/src/plugins/platforms/wayland_common/wayland_common.pro
+--- qtwayland-opensource-src-0.0-git855.e5601d283c/src/plugins/platforms/wayland_common/wayland_common.pro	2013-04-16 16:32:44.000000000 +0200
++++ qtwayland-fixnogl/src/plugins/platforms/wayland_common/wayland_common.pro	2013-05-04 19:13:14.510904236 +0200
+@@ -7,6 +7,8 @@
+ 
+ include (windowmanager_integration/windowmanager_integration.pri)
+ 
++isEmpty(QT_WAYLAND_GL_CONFIG):QT_WAYLAND_GL_CONFIG = $$(QT_WAYLAND_GL_CONFIG)
++
+ !equals(QT_WAYLAND_GL_CONFIG, nogl) {
+     DEFINES += QT_WAYLAND_GL_SUPPORT
+ }

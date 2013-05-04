@@ -1,0 +1,56 @@
+From 0e458d47fa99b171530650e8ea37e55261a6b4e6 Mon Sep 17 00:00:00 2001
+From: Carsten Munk <carsten.munk@jollamobile.com>
+Date: Wed, 24 Apr 2013 10:25:25 +0000
+Subject: [PATCH] Sanitize shaders a bit
+
+Signed-off-by: Carsten Munk <carsten.munk@jollamobile.com>
+
+diff --git a/examples/qml-compositor/WindowContainer.qml b/examples/qml-compositor/WindowContainer.qml
+index 7a034d8..c0f6fb0 100644
+--- a/examples/qml-compositor/WindowContainer.qml
++++ b/examples/qml-compositor/WindowContainer.qml
+@@ -101,7 +101,7 @@ Item {
+         enabled: true;
+         NumberAnimation { easing.type: Easing.Linear; duration: 250; }
+     }
+-
++/*
+     ContrastEffect {
+         id: effect
+         source: child
+@@ -115,7 +115,7 @@ Item {
+             NumberAnimation { easing.type: Easing.Linear; duration: 200; }
+         }
+     }
+-
++*/
+     transform: [
+         Scale { id: scaleTransform; origin.x: container.width / 2; origin.y: container.height / 2; xScale: 1; yScale: 1 }
+     ]
+diff --git a/src/plugins/platforms/qwayland-egl/qwaylandglcontext.cpp b/src/plugins/platforms/qwayland-egl/qwaylandglcontext.cpp
+index 3dccb7b..8e1b579 100644
+--- a/src/plugins/platforms/qwayland-egl/qwaylandglcontext.cpp
++++ b/src/plugins/platforms/qwayland-egl/qwaylandglcontext.cpp
+@@ -135,15 +135,15 @@ void QWaylandGLContext::swapBuffers(QPlatformSurface *surface)
+         makeCurrent(surface);
+         if (!m_blitProgram) {
+             m_blitProgram = new QOpenGLShaderProgram();
+-            m_blitProgram->addShaderFromSourceCode(QOpenGLShader::Vertex, "attribute vec4 position;\n\
+-                                                                        attribute vec4 texCoords;\n\
+-                                                                        varying vec2 outTexCoords;\n\
++            m_blitProgram->addShaderFromSourceCode(QOpenGLShader::Vertex, "attribute highp vec4 position;\n\
++                                                                        attribute highp vec4 texCoords;\n\
++                                                                        varying highp vec2 outTexCoords;\n\
+                                                                         void main()\n\
+                                                                         {\n\
+                                                                             gl_Position = position;\n\
+                                                                             outTexCoords = texCoords.xy;\n\
+                                                                         }");
+-            m_blitProgram->addShaderFromSourceCode(QOpenGLShader::Fragment, "varying vec2 outTexCoords;\n\
++            m_blitProgram->addShaderFromSourceCode(QOpenGLShader::Fragment, "varying highp vec2 outTexCoords;\n\
+                                                                             uniform sampler2D texture;\n\
+                                                                             void main()\n\
+                                                                             {\n\
+-- 
+1.7.10.3
+

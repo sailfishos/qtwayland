@@ -1,9 +1,0 @@
-diff -ru qtwayland-opensource-src-5.0.0-beta1/qtwayland.pro qtwayland-opensource-src-5.0.0-beta1-examples/qtwayland.pro
---- qtwayland-opensource-src-5.0.0-beta1/qtwayland.pro	2012-08-28 21:41:35.000000000 +0200
-+++ qtwayland-opensource-src-5.0.0-beta1-examples/qtwayland.pro	2012-09-22 22:35:16.510243537 +0200
-@@ -7,3 +7,5 @@
- qtCompileTest(xcomposite)
- 
- load(qt_parts)
-+
-+SUBDIRS += examples

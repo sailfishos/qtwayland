@@ -1,27 +1,30 @@
-%define _qtmodule_snapshot_version 0.0-git803.g4323bf663ea131897857ff564943b17e914ccd9b
+%define _qtmodule_snapshot_version 0.0-git855.e5601d283c
 %define _qtwayland_variant nogl
 Name:       qt5-qtwayland-%{_qtwayland_variant}
 Summary:    Qt Wayland compositor, %{_qtwayland_variant} variant
-Version:    0.0~git803.g4323bf663ea131897857ff564943b17e914ccd9b
+Version:    0.0~git855.e5601d283c
 Release:    1%{?dist}
 Group:      Qt/Qt
 License:    LGPLv2.1 with exception or GPLv3
 URL:        http://qt.nokia.com
 #Source0:    %{name}-%{version}.tar.xz
-Source0:    qtwayland-opensource-src-%{_qtmodule_snapshot_version}.tar.xz
-Patch0:    force-glib.patch   
-Patch1:    fixeglfs.patch
-Patch2:    fullscreen.patch
-Patch3:    fixnogl.patch
-Patch4:    nogl-everywhere.patch
-BuildRequires:  qt5-qtcore-devel
-BuildRequires:  qt5-qtgui-devel
-BuildRequires:  qt5-qtwidgets-devel
-BuildRequires:  qt5-qtopengl-devel
-BuildRequires:  qt5-qtplatformsupport-devel
-BuildRequires:  qt5-qtdeclarative-devel
-BuildRequires:  qt5-qtdeclarative-qtquick-devel
-BuildRequires:  qt5-qtv8-devel
+Source0:    qtwayland-opensource-src-%{_qtmodule_snapshot_version}.tar.gz
+Patch0: 0001-Add-eglfs-sanity.patch
+Patch1: 0002-Fullscreen-always.patch
+Patch2: 0003-Fixed-rendering-stalling-in-qml-compositor.patch
+Patch3: 0004-Force-glib-2.0.patch
+Patch4: 0005-Sanitize-shaders-a-bit.patch
+Patch5: fixnogl.patch
+BuildRequires:  pkgconfig(Qt5Core)
+BuildRequires:  pkgconfig(Qt5Gui)
+BuildRequires:  pkgconfig(Qt5Widgets)
+BuildRequires:  pkgconfig(Qt5OpenGL)
+BuildRequires:  pkgconfig(Qt5PlatformSupport)
+BuildRequires:  pkgconfig(Qt5Qml)
+BuildRequires:  pkgconfig(Qt5Declarative)
+BuildRequires:  pkgconfig(Qt5Quick)
+BuildRequires:  pkgconfig(Qt5V8)
+
 BuildRequires:  pkgconfig(wayland-client)
 %if "%{_qtwayland_variant}" == "wayland_egl"
 BuildRequires:  pkgconfig(wayland-egl)
@@ -75,13 +78,13 @@ This package contains the Qt wayland compositor examples for %{_qtwayland_varian
 %patch1 -p1 
 %patch2 -p1
 %patch3 -p1
-%patch4 -p1
+%patch4 -p1 
+%patch5 -p1 
 
 %build
-export QT_WAYLAND_GL_CONFIG=%{_qtwayland_variant}
 export QTDIR=/usr/share/qt5
-
-qmake -qt=5 "QT_BUILD_PARTS += examples"
+export QT_WAYLAND_GL_CONFIG=%{_qtwayland_variant}
+qmake -qt=5 "QT_BUILD_PARTS += examples" "CONFIG += wayland-compositor" 
 
 make %{?_smp_flags}
 
@@ -114,7 +117,20 @@ rm -rf %{buildroot}/%{_includedir}/qt5/Qt
 %defattr(-,root,root,-)
 %{_libdir}/libQt5Compositor.so.5
 %{_libdir}/libQt5Compositor.so.5.*
-%{_libdir}/qt5/plugins/platforms/libqwayland.so
+
+%if "%{_qtwayland_variant}" == "wayland_egl"
+%{_libdir}/qt5/plugins/platforms/libqwayland-egl.so
+%{_libdir}/qt5/plugins/waylandcompositors/libwayland-egl.so
+%endif
+
+%if "%{_qtwayland_variant}" == "xcomposite_egl"
+%{_libdir}/qt5/plugins/platforms/libqwayland-xcomposite-egl.so
+%{_libdir}/qt5/plugins/waylandcompositors/libxcomposite-egl.so
+%endif
+
+%if "%{_qtwayland_variant}" == "nogl"
+%{_libdir}/qt5/plugins/platforms/libqwayland-nogl.so
+%endif
 
 %files devel
 %defattr(-,root,root,-)

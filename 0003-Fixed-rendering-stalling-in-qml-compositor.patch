@@ -1,0 +1,33 @@
+From 810fffcd54d73703b4cf21ea9bc0ec585eb38553 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Samuel=20R=C3=B8dal?= <samuel.rodal@digia.com>
+Date: Mon, 22 Apr 2013 16:15:20 +0200
+Subject: [PATCH 3/3] Fixed rendering stalling in qml-compositor.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+We need to emit the textureChanged() signal on the QSGTextureProvider
+class for scene graph to mark the shader effect as dirty and for
+rendering of a new frame to be triggered.
+
+Change-Id: I57f625a154c5215e83b5e93b613463e97e9b8f77
+Reviewed-by: Jørgen Lind <jorgen.lind@digia.com>
+---
+ src/compositor/compositor_api/qwaylandsurfaceitem.cpp |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/compositor/compositor_api/qwaylandsurfaceitem.cpp b/src/compositor/compositor_api/qwaylandsurfaceitem.cpp
+index 5089ce5..a6f425a 100644
+--- a/src/compositor/compositor_api/qwaylandsurfaceitem.cpp
++++ b/src/compositor/compositor_api/qwaylandsurfaceitem.cpp
+@@ -381,6 +381,7 @@ void QWaylandSurfaceItem::updateTexture()
+     }
+ 
+     m_provider->t = texture;
++    emit m_provider->textureChanged();
+     m_provider->smooth = smooth();
+ }
+ 
+-- 
+1.7.10.3
+
