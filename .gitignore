@@ -16,15 +16,7 @@ qtwayland*-config.*
 qtwayland*-config_p.h
 .qmake.cache
 config.log
-config.tests/egl/egl
-config.tests/glx/glx
-config.tests/wayland_cursor/wayland_cursor
-config.tests/wayland_egl/wayland_egl
-config.tests/xcomposite/xcomposite
-config.tests/xkbcommon/xkbcommon
-config.tests/wayland/wayland
-config.tests/drm_egl_server/drm_egl_server
-config.tests/wayland_scanner/wayland_scanner
+config.tests/*
 config.cache
 config.opt
 config.summary
@@ -71,3 +63,5 @@ tests/auto/compositor/compositor/tst_compositor
 tests/auto/compositor/compositor/qwayland-*.cpp
 tests/auto/compositor/compositor/qwayland-*.h
 *~
+RPMS
+*.list
