@@ -128,7 +128,8 @@ QWaylandIntegration::QWaylandIntegration()
     mClipboard = new QWaylandClipboard(mDisplay);
     mDrag = new QWaylandDrag(mDisplay);
 
-    mInputContext.reset(new QWaylandInputContext(mDisplay));
+    //mInputContext.reset(new QWaylandInputContext(mDisplay));
+    mInputContext.reset(QPlatformInputContextFactory::create());
 }
 
 QWaylandIntegration::~QWaylandIntegration()
