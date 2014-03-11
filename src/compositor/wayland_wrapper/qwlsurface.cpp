@@ -130,6 +130,7 @@ Surface::Surface(struct wl_client *client, uint32_t id, Compositor *compositor)
     , m_inputPanelSurface(0)
     , m_transientInactive(false)
     , m_isCursorSurface(false)
+    , m_destroyed(false)
 {
     m_pending.buffer = 0;
     m_pending.newlyAttached = false;
@@ -420,6 +421,7 @@ SurfaceBuffer *Surface::createSurfaceBuffer(struct ::wl_resource *buffer)
 
 void Surface::surface_destroy_resource(Resource *)
 {
+    m_destroyed = true;
     if (m_extendedSurface) {
         if (m_extendedSurface->resource())
             wl_resource_destroy(m_extendedSurface->resource()->handle);

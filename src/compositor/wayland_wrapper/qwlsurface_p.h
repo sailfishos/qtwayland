@@ -143,6 +143,9 @@ public:
     void swapBuffers();
     void releaseSurfaces();
     void frameStarted();
+    inline bool isDestroyed() const { return m_destroyed; }
+
+    void setCompositorVisible(bool visible);
 
 private:
     Q_DISABLE_COPY(Surface)
@@ -186,6 +189,8 @@ private:
     bool m_isCursorSurface;
 
     inline SurfaceBuffer *currentSurfaceBuffer() const;
+    bool m_destroyed;
+
     void setBackBuffer(SurfaceBuffer *buffer);
     SurfaceBuffer *createSurfaceBuffer(struct ::wl_resource *buffer);
 
