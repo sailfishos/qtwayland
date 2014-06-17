@@ -15,7 +15,6 @@ BuildRequires:  pkgconfig(Qt5OpenGL)
 BuildRequires:  pkgconfig(Qt5PlatformSupport)
 BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
-BuildRequires:  pkgconfig(Qt5V8)
 BuildRequires:  pkgconfig(Qt5DBus)
 
 BuildRequires:  pkgconfig(wayland-client)
@@ -87,6 +86,8 @@ find %{buildroot}%{_libdir} -type f -name '*.prl' \
 
 # We don't need qt5/Qt/
 rm -rf %{buildroot}/%{_includedir}/qt5/Qt
+rm -f %{buildroot}/%{_libdir}/qt5/plugins/wayland-graphics-integration/server/liblibhybris-egl-server.so
+rm -f %{buildroot}/%{_libdir}/qt5/plugins/wayland-graphics-integration/client/liblibhybris-egl-server.so
 
 
 %fdupes %{buildroot}/%{_includedir}

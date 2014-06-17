@@ -15,7 +15,6 @@ BuildRequires:  pkgconfig(Qt5OpenGL)
 BuildRequires:  pkgconfig(Qt5PlatformSupport)
 BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
-BuildRequires:  pkgconfig(Qt5V8)
 BuildRequires:  pkgconfig(Qt5DBus)
 
 BuildRequires:  pkgconfig(wayland-client)
