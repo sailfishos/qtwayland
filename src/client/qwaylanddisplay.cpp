@@ -117,6 +117,7 @@ QWaylandDisplay::QWaylandDisplay(QWaylandIntegration *waylandIntegration)
 
     mEventThreadObject = new QWaylandEventThread(0);
     mEventThread = new QThread(this);
+    mEventThread->setObjectName("QtWayland event thread");
     mEventThreadObject->moveToThread(mEventThread);
     mEventThread->start();
 
