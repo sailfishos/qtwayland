@@ -101,7 +101,7 @@ public:
     virtual QWaylandSurface *pickSurface(const QPointF &globalPosition) const;
     virtual QPointF mapToSurface(QWaylandSurface *surface, const QPointF &surfacePosition) const;
 
-    virtual void openUrl(WaylandClient *client, const QUrl &url);
+    virtual bool openUrl(WaylandClient *client, const QUrl &url);
 
     QtWayland::Compositor *handle() const;
 
