@@ -103,6 +103,14 @@ ShellSurface::ShellSurface(Shell *shell, wl_client *client, uint32_t id, Surface
     , m_popupSerial()
 {
     surface->setShellSurface(this);
+    connect(surface->waylandSurface(), &QObject::destroyed, this, &ShellSurface::surfaceDestroyed);
+}
+
+void ShellSurface::surfaceDestroyed()
+{
+    m_surface = Q_NULLPTR;
+    // The spec says wl_shell_surface is destroyed when the wl_surface goes away. so do it
+    wl_resource_destroy(resource()->handle);
 }
 
 void ShellSurface::sendConfigure(uint32_t edges, int32_t width, int32_t height)

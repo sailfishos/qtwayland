@@ -82,7 +82,7 @@ private:
     QHash<InputDevice*, ShellSurfacePopupGrabber*> m_popupGrabber;
 };
 
-class Q_COMPOSITOR_EXPORT ShellSurface : public QtWaylandServer::wl_shell_surface
+class Q_COMPOSITOR_EXPORT ShellSurface : public QObject, public QtWaylandServer::wl_shell_surface
 {
 public:
     ShellSurface(Shell *shell, struct wl_client *client, uint32_t id, Surface *surface);
@@ -104,6 +104,8 @@ public:
     void mapPopup();
 
 private:
+    void surfaceDestroyed();
+
     Shell *m_shell;
     Surface *m_surface;
 
