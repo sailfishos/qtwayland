@@ -140,6 +140,8 @@ public:
     void raise() Q_DECL_OVERRIDE;
     void lower() Q_DECL_OVERRIDE;
 
+    void setMask(const QRegion &region) Q_DECL_OVERRIDE;
+
     void requestActivateWindow() Q_DECL_OVERRIDE;
     bool isExposed() const Q_DECL_OVERRIDE;
     void unfocus();
@@ -224,6 +226,7 @@ protected:
     int mMouseSerial;
 
     Qt::WindowState mState;
+    QRegion mMask;
 
     QWaylandShmBackingStore *mBackingStore;
 

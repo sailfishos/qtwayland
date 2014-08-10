@@ -177,6 +177,7 @@ protected:
         QRegion damage;
         QPoint offset;
         bool newlyAttached;
+        QRegion inputRegion;
     } m_pending;
 
     QPoint m_lastLocalMousePos;

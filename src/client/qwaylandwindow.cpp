@@ -91,6 +91,7 @@ QWaylandWindow::QWaylandWindow(QWindow *window)
     , mMouseDevice(0)
     , mMouseSerial(0)
     , mState(Qt::WindowNoState)
+    , mMask()
     , mBackingStore(Q_NULLPTR)
 {
     init(mDisplay->createSurface(static_cast<QtWayland::wl_surface *>(this)));
@@ -128,6 +129,7 @@ QWaylandWindow::QWaylandWindow(QWindow *window)
     setOrientationMask(window->screen()->orientationUpdateMask());
     setWindowFlags(window->flags());
     setGeometry_helper(window->geometry());
+    setMask(window->mask());
     setWindowStateInternal(window->windowState());
     handleContentOrientationChange(window->contentOrientation());
 }
@@ -269,6 +271,24 @@ void QWaylandWindow::lower()
 {
     if (mShellSurface)
         mShellSurface->lower();
+}
+
+void QWaylandWindow::setMask(const QRegion &mask)
+{
+    if (mMask == mask)
+        return;
+
+    mMask = mask;
+
+    if (mMask.isEmpty()) {
+        set_input_region(0);
+    } else {
+        struct ::wl_region *region = mDisplay->createRegion(mMask);
+        set_input_region(region);
+        wl_region_destroy(region);
+    }
+
+    commit();
 }
 
 void QWaylandWindow::configure(uint32_t edges, int32_t width, int32_t height)
