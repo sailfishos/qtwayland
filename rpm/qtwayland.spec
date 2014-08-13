@@ -8,16 +8,14 @@ License:    LGPLv2.1 with exception or GPLv3
 URL:        http://qt.nokia.com
 Source0:    %{name}-%{version}.tar.bz2
 Source100:	precheckin.sh
-BuildRequires:  pkgconfig(Qt5Core)
-BuildRequires:  pkgconfig(Qt5Gui)
-BuildRequires:  pkgconfig(Qt5Widgets)
-BuildRequires:  pkgconfig(Qt5OpenGL)
-BuildRequires:  pkgconfig(Qt5PlatformSupport)
-BuildRequires:  pkgconfig(Qt5Qml)
-BuildRequires:  pkgconfig(Qt5Quick)
-BuildRequires:  pkgconfig(Qt5DBus)
-
-BuildRequires:  pkgconfig(wayland-client)
+BuildRequires:  pkgconfig(Qt5Core) >= 5.2.1
+BuildRequires:  pkgconfig(Qt5Gui) >= 5.2.1
+BuildRequires:  pkgconfig(Qt5PlatformSupport) >= 5.2.1
+BuildRequires:  pkgconfig(Qt5Qml) >= 5.2.1
+BuildRequires:  pkgconfig(Qt5Quick) >= 5.2.1
+BuildRequires:  pkgconfig(Qt5DBus) >= 5.2.1
+BuildRequires:  pkgconfig(wayland-server) >= 1.2.0
+BuildRequires:  pkgconfig(wayland-client) >= 1.2.0
 %if "%{name}" == "qt5-qtwayland-wayland_egl"
 BuildRequires:  pkgconfig(wayland-egl)
 %endif
