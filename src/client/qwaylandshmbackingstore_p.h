@@ -52,7 +52,7 @@ QT_BEGIN_NAMESPACE
 
 class QWaylandDisplay;
 class QWaylandAbstractDecoration;
-class QWaylandWindow;
+class QWaylandShmWindow;
 
 class Q_WAYLAND_CLIENT_EXPORT QWaylandShmBuffer : public QWaylandBuffer {
 public:
@@ -87,13 +87,10 @@ public:
 
     QMargins windowDecorationMargins() const;
     QImage *entireSurface() const;
-    QImage *contentSurface() const;
     void ensureSize();
 
-    QWaylandWindow *waylandWindow() const;
+    QWaylandShmWindow *waylandWindow() const;
     void iterateBuffer();
-
-    QImage toImage() const Q_DECL_OVERRIDE;
 
 private:
     void updateDecorations();

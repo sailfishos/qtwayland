@@ -57,7 +57,6 @@ static const char *qwaylandegl_threadedgl_blacklist_vendor[] = {
 
 QWaylandEglClientBufferIntegration::QWaylandEglClientBufferIntegration()
     : m_waylandDisplay(0)
-    , m_eglDisplay(EGL_NO_DISPLAY)
     , m_supportsThreading(false)
 {
     qDebug() << "Using Wayland-EGL";
@@ -80,15 +79,13 @@ void QWaylandEglClientBufferIntegration::initialize(QWaylandDisplay *display)
 
     EGLint major,minor;
     m_eglDisplay = eglGetDisplay((EGLNativeDisplayType) m_waylandDisplay);
-    if (m_eglDisplay == EGL_NO_DISPLAY) {
+    if (m_eglDisplay == NULL) {
         qWarning("EGL not available");
-        return;
-    }
-
-    if (!eglInitialize(m_eglDisplay, &major, &minor)) {
-        qWarning("failed to initialize EGL display");
-        m_eglDisplay = EGL_NO_DISPLAY;
-        return;
+    } else {
+        if (!eglInitialize(m_eglDisplay, &major, &minor)) {
+            qWarning("failed to initialize EGL display");
+            return;
+        }
     }
 
     m_supportsThreading = true;
@@ -102,11 +99,6 @@ void QWaylandEglClientBufferIntegration::initialize(QWaylandDisplay *display)
             break;
         }
     }
-}
-
-bool QWaylandEglClientBufferIntegration::isValid() const
-{
-    return m_eglDisplay != EGL_NO_DISPLAY;
 }
 
 bool QWaylandEglClientBufferIntegration::supportsThreadedOpenGL() const

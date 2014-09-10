@@ -58,7 +58,6 @@ public:
     ~QWaylandEglClientBufferIntegration();
 
     void initialize(QWaylandDisplay *display) Q_DECL_OVERRIDE;
-    bool isValid() const Q_DECL_OVERRIDE;
     bool supportsThreadedOpenGL() const Q_DECL_OVERRIDE;
     bool supportsWindowDecoration() const Q_DECL_OVERRIDE;
 
