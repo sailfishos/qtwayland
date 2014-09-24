@@ -86,7 +86,7 @@ find %{buildroot}%{_libdir} -type f -name '*.prl' \
 rm -rf %{buildroot}/%{_includedir}/qt5/Qt
 rm -f %{buildroot}/%{_libdir}/qt5/plugins/wayland-graphics-integration-server/liblibhybris-egl-server.so
 rm -f %{buildroot}/%{_libdir}/qt5/plugins/wayland-graphics-integration-client/liblibhybris-egl-server.so
-
+rm -r %{buildroot}/%{_libdir}/qt5/plugins/wayland-decoration-client/libbradient.so
 
 %fdupes %{buildroot}/%{_includedir}
 
