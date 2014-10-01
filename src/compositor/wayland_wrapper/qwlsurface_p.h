@@ -203,6 +203,7 @@ protected:
     SurfaceBuffer *createSurfaceBuffer(struct ::wl_resource *buffer);
 
     friend class QWaylandSurface;
+    friend class ExtendedSurface;
 };
 
 }
