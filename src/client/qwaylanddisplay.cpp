@@ -149,6 +149,7 @@ QWaylandDisplay::QWaylandDisplay(QWaylandIntegration *waylandIntegration)
     init(registry);
 
     connect(mEventThreadObject, SIGNAL(newEventsRead()), this, SLOT(flushRequests()));
+    connect(mEventThreadObject, &QWaylandEventThread::fatalError, this, &QWaylandDisplay::exitWithError);
 
     mWindowManagerIntegration.reset(new QWaylandWindowManagerIntegration(this));
 
@@ -167,8 +168,10 @@ QWaylandDisplay::~QWaylandDisplay(void)
 
 void QWaylandDisplay::flushRequests()
 {
-    if (wl_display_dispatch_queue_pending(mDisplay, mEventQueue) < 0)
-        mEventThreadObject->checkErrorAndExit();
+    if (wl_display_dispatch_queue_pending(mDisplay, mEventQueue) < 0) {
+        mEventThreadObject->checkError();
+        exitWithError();
+    }
 
     wl_display_flush(mDisplay);
 }
@@ -176,8 +179,15 @@ void QWaylandDisplay::flushRequests()
 
 void QWaylandDisplay::blockingReadEvents()
 {
-    if (wl_display_dispatch_queue(mDisplay, mEventQueue) < 0)
-        mEventThreadObject->checkErrorAndExit();
+    if (wl_display_dispatch_queue(mDisplay, mEventQueue) < 0) {
+        mEventThreadObject->checkError();
+        exitWithError();
+    }
+}
+
+void QWaylandDisplay::exitWithError()
+{
+    ::exit(1);
 }
 
 QWaylandScreen *QWaylandDisplay::screenForOutput(struct wl_output *output) const
@@ -240,7 +250,7 @@ void QWaylandDisplay::registry_global(uint32_t id, const QString &interface, uin
         foreach (QPlatformScreen *screen, screens())
             static_cast<QWaylandScreen *>(screen)->createExtendedOutput();
     } else if (interface == QStringLiteral("qt_surface_extension")) {
-        mWindowExtension.reset(new QtWayland::qt_surface_extension(registry, id, 1));
+        mWindowExtension.reset(new QtWayland::qt_surface_extension(registry, id, 2));
     } else if (interface == QStringLiteral("qt_sub_surface_extension")) {
         mSubSurfaceExtension.reset(new QtWayland::qt_sub_surface_extension(registry, id, 1));
     } else if (interface == QStringLiteral("qt_touch_extension")) {

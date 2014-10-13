@@ -75,7 +75,7 @@ private:
 class ExtendedSurface : public QWaylandSurfaceInterface, public QtWaylandServer::qt_extended_surface
 {
 public:
-    ExtendedSurface(struct wl_client *client, uint32_t id, Surface *surface);
+    ExtendedSurface(struct wl_client *client, uint32_t id, int version, Surface *surface);
     ~ExtendedSurface();
 
     void sendGenericProperty(const QString &name, const QVariant &variant);
@@ -112,7 +112,8 @@ private:
     void extended_surface_update_generic_property(Resource *resource,
                                                   const QString &name,
                                                   struct wl_array *value) Q_DECL_OVERRIDE;
-
+    void extended_surface_set_content_orientation(Resource *resource,
+                                                  int32_t orientation) Q_DECL_OVERRIDE;
     void extended_surface_set_content_orientation_mask(Resource *resource,
                                                        int32_t orientation) Q_DECL_OVERRIDE;
 

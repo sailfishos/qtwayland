@@ -142,6 +142,9 @@ QWaylandShmBackingStore::QWaylandShmBackingStore(QWindow *window)
 
 QWaylandShmBackingStore::~QWaylandShmBackingStore()
 {
+    if (QWaylandWindow *w = waylandWindow())
+        w->setBackingStore(Q_NULLPTR);
+
     if (mFrameCallback)
         wl_callback_destroy(mFrameCallback);
 
@@ -179,6 +182,14 @@ void QWaylandShmBackingStore::endPaint()
 {
     mPainting = false;
     waylandWindow()->setCanResize(true);
+}
+
+void QWaylandShmBackingStore::hidden()
+{
+    if (mFrameCallback) {
+        wl_callback_destroy(mFrameCallback);
+        mFrameCallback = Q_NULLPTR;
+    }
 }
 
 void QWaylandShmBackingStore::ensureSize()

@@ -54,6 +54,7 @@
 #include "qwaylandwindowmanagerintegration_p.h"
 #include "qwaylandnativeinterface_p.h"
 #include "qwaylanddecorationfactory_p.h"
+#include "qwaylandshmbackingstore_p.h"
 
 #include <QtCore/QFileInfo>
 #include <QtCore/QPointer>
@@ -90,6 +91,7 @@ QWaylandWindow::QWaylandWindow(QWindow *window)
     , mMouseDevice(0)
     , mMouseSerial(0)
     , mState(Qt::WindowNoState)
+    , mBackingStore(Q_NULLPTR)
 {
     init(mDisplay->createSurface(static_cast<QtWayland::wl_surface *>(this)));
 
@@ -241,6 +243,8 @@ void QWaylandWindow::setVisible(bool visible)
         // QWaylandShmBackingStore::beginPaint().
     } else {
         QWindowSystemInterface::handleExposeEvent(window(), QRegion());
+        if (window()->flags() & Qt::CoverWindow)
+            return;
         // when flushing the event queue, it could contain a close event, in which
         // case 'this' will be deleted. When that happens, we must abort right away.
         QPointer<QWaylandWindow> deleteGuard(this);
@@ -248,6 +252,9 @@ void QWaylandWindow::setVisible(bool visible)
         if (!deleteGuard.isNull()) {
             attach(static_cast<QWaylandBuffer *>(0), 0, 0);
             commit();
+            if (mBackingStore) {
+                mBackingStore->hidden();
+            }
         }
     }
 }
@@ -700,7 +707,6 @@ bool QWaylandWindow::setWindowStateInternal(Qt::WindowState state)
     // QPlatformWindow::setWindowState returns, so we cannot rely on QWindow::windowState
     // here. We use then this mState variable.
     mState = state;
-    createDecoration();
 
     if (mShellSurface) {
         switch (state) {

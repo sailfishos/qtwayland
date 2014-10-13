@@ -63,6 +63,7 @@ class QWaylandSubSurface;
 class QWaylandAbstractDecoration;
 class QWaylandInputDevice;
 class QWaylandScreen;
+class QWaylandShmBackingStore;
 
 class Q_WAYLAND_CLIENT_EXPORT QWaylandWindowConfigure
 {
@@ -181,6 +182,9 @@ public:
     QVariant property(const QString &name);
     QVariant property(const QString &name, const QVariant &defaultValue);
 
+    void setBackingStore(QWaylandShmBackingStore *backingStore) { mBackingStore = backingStore; }
+    QWaylandShmBackingStore *backingStore() const { return mBackingStore; }
+
     bool setKeyboardGrabEnabled(bool) Q_DECL_OVERRIDE { return false; }
     void propagateSizeHints() Q_DECL_OVERRIDE { }
 
@@ -220,6 +224,8 @@ protected:
     int mMouseSerial;
 
     Qt::WindowState mState;
+
+    QWaylandShmBackingStore *mBackingStore;
 
 private:
     bool setWindowStateInternal(Qt::WindowState flags);

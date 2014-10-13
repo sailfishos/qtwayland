@@ -48,7 +48,7 @@ QT_BEGIN_NAMESPACE
 namespace QtWayland {
 
 SurfaceExtensionGlobal::SurfaceExtensionGlobal(Compositor *compositor)
-    : QtWaylandServer::qt_surface_extension(compositor->wl_display())
+    : QtWaylandServer::qt_surface_extension(compositor->wl_display(), 2)
 {
 }
 
@@ -57,12 +57,12 @@ void SurfaceExtensionGlobal::surface_extension_get_extended_surface(Resource *re
                                                                     struct wl_resource *surface_resource)
 {
     Surface *surface = Surface::fromResource(surface_resource);
-    new ExtendedSurface(resource->client(),id,surface);
+    new ExtendedSurface(resource->client(),id, wl_resource_get_version(resource->handle), surface);
 }
 
-ExtendedSurface::ExtendedSurface(struct wl_client *client, uint32_t id, Surface *surface)
+ExtendedSurface::ExtendedSurface(struct wl_client *client, uint32_t id, int version, Surface *surface)
     : QWaylandSurfaceInterface(surface->waylandSurface())
-    , QtWaylandServer::qt_extended_surface(client,id)
+    , QtWaylandServer::qt_extended_surface(client, id, version)
     , m_surface(surface)
     , m_windowFlags(0)
 {
@@ -118,9 +118,29 @@ void ExtendedSurface::extended_surface_update_generic_property(Resource *resourc
     setWindowProperty(name,variantValue,false);
 }
 
+static Qt::ScreenOrientation screenOrientationFromWaylandOrientation(int32_t orientation)
+{
+    switch (orientation) {
+    case QT_EXTENDED_SURFACE_ORIENTATION_PORTRAITORIENTATION: return Qt::PortraitOrientation;
+    case QT_EXTENDED_SURFACE_ORIENTATION_INVERTEDPORTRAITORIENTATION: return Qt::InvertedPortraitOrientation;
+    case QT_EXTENDED_SURFACE_ORIENTATION_LANDSCAPEORIENTATION: return Qt::LandscapeOrientation;
+    case QT_EXTENDED_SURFACE_ORIENTATION_INVERTEDLANDSCAPEORIENTATION: return Qt::InvertedLandscapeOrientation;
+    default: return Qt::PrimaryOrientation;
+    }
+}
+
 Qt::ScreenOrientations ExtendedSurface::contentOrientationMask() const
 {
     return m_contentOrientationMask;
+}
+
+void ExtendedSurface::extended_surface_set_content_orientation(Resource *resource, int32_t orientation)
+{
+    Q_UNUSED(resource);
+    Qt::ScreenOrientation oldOrientation = m_surface->m_contentOrientation;
+    m_surface->m_contentOrientation = screenOrientationFromWaylandOrientation(orientation);
+    if (m_surface->m_contentOrientation != oldOrientation)
+        emit m_surface->waylandSurface()->contentOrientationChanged();
 }
 
 void ExtendedSurface::extended_surface_set_content_orientation_mask(Resource *resource, int32_t orientation)
