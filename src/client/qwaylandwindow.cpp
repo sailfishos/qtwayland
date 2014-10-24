@@ -243,7 +243,7 @@ void QWaylandWindow::setVisible(bool visible)
         // QWaylandShmBackingStore::beginPaint().
     } else {
         QWindowSystemInterface::handleExposeEvent(window(), QRegion());
-        if (window()->flags() & Qt::CoverWindow)
+        if (window()->type() == Qt::CoverWindow)
             return;
         // when flushing the event queue, it could contain a close event, in which
         // case 'this' will be deleted. When that happens, we must abort right away.
