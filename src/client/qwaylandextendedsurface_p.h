@@ -66,6 +66,7 @@ public:
     void updateGenericProperty(const QString &name, const QVariant &value);
 
     Qt::WindowFlags setWindowFlags(Qt::WindowFlags flags);
+    bool isExposed() const { return m_exposed; }
 
 private:
     void extended_surface_onscreen_visibility(int32_t visibility) Q_DECL_OVERRIDE;
@@ -74,6 +75,7 @@ private:
 
     QWaylandWindow *m_window;
     QVariantMap m_properties;
+    bool m_exposed;
 };
 
 QT_END_NAMESPACE

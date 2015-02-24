@@ -56,6 +56,7 @@ QT_BEGIN_NAMESPACE
 QWaylandExtendedSurface::QWaylandExtendedSurface(QWaylandWindow *window)
     : QtWayland::qt_extended_surface(window->display()->windowExtension()->get_extended_surface(window->object()))
     , m_window(window)
+    , m_exposed(true)
 {
 }
 
@@ -91,7 +92,15 @@ void QWaylandExtendedSurface::setContentOrientationMask(Qt::ScreenOrientations m
 
 void QWaylandExtendedSurface::extended_surface_onscreen_visibility(int32_t visibility)
 {
-    m_window->window()->setVisibility(static_cast<QWindow::Visibility>(visibility));
+    // If visibility is Hidden we want the window to just stop rendering, not to hide.
+    // calling setVisible(false) causes a NULL buffer to be attached, and it is better
+    // to show an outdated buffer rather than random garbage from memory.
+    m_exposed = visibility != QWindow::Hidden;
+    QRegion region;
+    if (m_exposed) {
+        region = QRegion(QRect(0, 0, m_window->window()->width(), m_window->window()->height()));
+    }
+    QWindowSystemInterface::handleExposeEvent(m_window->window(), region);
 }
 
 void QWaylandExtendedSurface::extended_surface_set_generic_property(const QString &name, wl_array *value)
