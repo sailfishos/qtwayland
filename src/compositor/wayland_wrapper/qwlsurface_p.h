@@ -64,6 +64,8 @@ QT_BEGIN_NAMESPACE
 
 class QTouchEvent;
 
+class QWaylandUnmapLock;
+
 namespace QtWayland {
 
 class Compositor;
@@ -132,6 +134,9 @@ public:
     void releaseSurfaces();
     void frameStarted();
 
+    void addUnmapLock(QWaylandUnmapLock *l);
+    void removeUnmapLock(QWaylandUnmapLock *l);
+
     void setMapped(bool mapped);
 
     inline bool isDestroyed() const { return m_destroyed; }
@@ -165,6 +170,7 @@ protected:
     QWaylandBufferRef m_bufferRef;
     bool m_surfaceMapped;
     QWaylandBufferAttacher *m_attacher;
+    QList<QWaylandUnmapLock *> m_unmapLocks;
 
     struct {
         SurfaceBuffer *buffer;
