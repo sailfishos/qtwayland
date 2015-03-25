@@ -157,11 +157,6 @@ void QWaylandWlShellSurface::setTopLevel()
     set_toplevel();
 }
 
-bool QWaylandWlShellSurface::isExposed() const
-{
-    return m_extendedWindow ? m_extendedWindow->isExposed() : true;
-}
-
 void QWaylandWlShellSurface::updateTransientParent(QWindow *parent)
 {
     QWaylandWindow *parent_wayland_window = static_cast<QWaylandWindow *>(parent->handle());

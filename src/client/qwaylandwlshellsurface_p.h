@@ -79,8 +79,6 @@ public:
     void setWindowFlags(Qt::WindowFlags flags) Q_DECL_OVERRIDE;
     void sendProperty(const QString &name, const QVariant &value) Q_DECL_OVERRIDE;
 
-    bool isExposed() const Q_DECL_OVERRIDE;
-
 private:
     void setMaximized() Q_DECL_OVERRIDE;
     void setFullscreen() Q_DECL_OVERRIDE;

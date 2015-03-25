@@ -431,4 +431,22 @@ void QWaylandSurfacePrivate::setType(QWaylandSurface::WindowType type)
     }
 }
 
+/*!
+    Constructs a QWaylandUnmapLock object.
+
+    The lock will act on the \a surface parameter, and will prevent the surface to
+    be unmapped, retaining the last valid buffer when the client attachs a NULL buffer.
+    The lock will be automatically released when deleted.
+*/
+QWaylandUnmapLock::QWaylandUnmapLock(QWaylandSurface *surface)
+                 : m_surface(surface)
+{
+    surface->handle()->addUnmapLock(this);
+}
+
+QWaylandUnmapLock::~QWaylandUnmapLock()
+{
+    m_surface->handle()->removeUnmapLock(this);
+}
+
 QT_END_NAMESPACE
