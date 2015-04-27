@@ -78,7 +78,8 @@ QWaylandEglWindow::~QWaylandEglWindow()
         m_eglSurface = 0;
     }
 
-    wl_egl_window_destroy(m_waylandEglWindow);
+    if (m_waylandEglWindow)
+        wl_egl_window_destroy(m_waylandEglWindow);
 
     delete m_contentFBO;
 }
