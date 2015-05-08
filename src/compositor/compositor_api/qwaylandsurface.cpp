@@ -321,6 +321,12 @@ bool QWaylandSurface::transientInactive() const
     return d->transientInactive();
 }
 
+bool QWaylandSurface::inputRegionContains(const QPoint &p) const
+{
+    Q_D(const QWaylandSurface);
+    return d->inputRegion().contains(p);
+}
+
 void QWaylandSurface::destroy()
 {
     Q_D(QWaylandSurface);
