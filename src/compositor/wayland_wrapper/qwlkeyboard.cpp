@@ -144,7 +144,15 @@ void Keyboard::setFocus(Surface* surface)
 void Keyboard::setKeymap(const QWaylandKeymap &keymap)
 {
     m_keymap = keymap;
-    m_pendingKeymap = true;
+
+    // If there is no key currently pressed, update right away the keymap
+    // Otherwise, delay the update when keys are released
+    // see http://lists.freedesktop.org/archives/wayland-devel/2013-October/011395.html
+    if (m_keys.isEmpty()) {
+        updateKeymap();
+    } else {
+        m_pendingKeymap = true;
+    }
 }
 
 void Keyboard::focusDestroyed(void *data)
@@ -219,6 +227,10 @@ void Keyboard::keyEvent(uint code, uint32_t state)
             }
         }
     }
+
+    // If keys are no longer pressed, update the keymap
+    if (m_pendingKeymap && m_keys.isEmpty())
+        updateKeymap();
 }
 
 void Keyboard::sendKeyEvent(uint code, uint32_t state)
@@ -267,11 +279,6 @@ void Keyboard::updateModifierState(uint code, uint32_t state)
 
 void Keyboard::updateKeymap()
 {
-    // There must be no keys pressed when changing the keymap,
-    // see http://lists.freedesktop.org/archives/wayland-devel/2013-October/011395.html
-    if (!m_pendingKeymap || !m_keys.isEmpty())
-        return;
-
     m_pendingKeymap = false;
 #ifndef QT_NO_WAYLAND_XKB
     createXKBKeymap();
