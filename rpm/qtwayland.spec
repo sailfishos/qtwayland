@@ -9,7 +9,6 @@ URL:        http://qt.nokia.com
 Source0:    %{name}-%{version}.tar.bz2
 Source100:	precheckin.sh
 BuildRequires:  pkgconfig(Qt5Core) >= 5.2.1
-BuildRequires:  pkgconfig(Qt5Gui) >= 5.2.1
 BuildRequires:  pkgconfig(Qt5PlatformSupport) >= 5.2.1
 BuildRequires:  pkgconfig(Qt5Qml) >= 5.2.1
 BuildRequires:  pkgconfig(Qt5Quick) >= 5.2.1
@@ -19,6 +18,8 @@ BuildRequires:  pkgconfig(wayland-client) >= 1.2.0
 %if "%{name}" == "qt5-qtwayland-wayland_egl"
 BuildRequires:  pkgconfig(wayland-egl)
 %endif
+BuildRequires:  qt5-qtgui-devel >= 5.2.1+git24
+Requires: qt5-qtgui >= 5.2.1+git24
 
 BuildRequires:  libxkbcommon-devel
 BuildRequires:  pkgconfig(glib-2.0)
