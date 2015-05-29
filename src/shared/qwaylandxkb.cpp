@@ -266,6 +266,8 @@ static const uint32_t KeyTbl[] = {
     XKB_KEY_XF86LaunchE,             Qt::Key_LaunchE,
     XKB_KEY_XF86LaunchF,             Qt::Key_LaunchF,
 
+    XKB_KEY_XF86Phone,               Qt::Key_ToggleCallHangup,
+
     0,                          0
 };
 
