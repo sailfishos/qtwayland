@@ -86,14 +86,10 @@ void QWaylandEventThread::checkError() const
 
 void QWaylandEventThread::readWaylandEvents()
 {
-    if (wl_display_dispatch(m_display) < 0) {
-        checkError();
-        m_readNotifier->setEnabled(false);
-        emit fatalError();
-        return;
+    if (wl_display_prepare_read(m_display) == 0) {
+        wl_display_read_events(m_display);
+        emit newEventsRead();
     }
-
-    emit newEventsRead();
 }
 
 void QWaylandEventThread::waylandDisplayConnect()
