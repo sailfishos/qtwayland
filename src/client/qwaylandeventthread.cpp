@@ -88,8 +88,8 @@ void QWaylandEventThread::readWaylandEvents()
 {
     if (wl_display_prepare_read(m_display) == 0) {
         wl_display_read_events(m_display);
-        emit newEventsRead();
     }
+    emit newEventsRead();
 }
 
 void QWaylandEventThread::waylandDisplayConnect()
