@@ -364,11 +364,9 @@ void Surface::surface_destroy_resource(Resource *)
         m_extendedSurface = 0;
     }
 
-    if (transientParent()) {
-        foreach (Surface *surface, compositor()->surfaces()) {
-            if (surface->transientParent() == this) {
-                surface->setTransientParent(0);
-            }
+    foreach (Surface *surface, compositor()->surfaces()) {
+        if (surface->transientParent() == this) {
+            surface->setTransientParent(0);
         }
     }
 
