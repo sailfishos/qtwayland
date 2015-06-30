@@ -109,8 +109,12 @@ public:
 
     void invalidateTexture()
     {
+        if (bufferRef)
+            bufferRef.destroyTexture();
         delete texture;
         texture = 0;
+        update = true;
+        bufferRef = QWaylandBufferRef();
     }
 
     QWaylandQuickSurface *surface;
@@ -165,6 +169,7 @@ QWaylandQuickSurface::QWaylandQuickSurface(wl_client *client, quint32 id, int ve
     QQuickWindow *window = static_cast<QQuickWindow *>(compositor->window());
     connect(window, &QQuickWindow::beforeSynchronizing, this, &QWaylandQuickSurface::updateTexture, Qt::DirectConnection);
     connect(window, &QQuickWindow::sceneGraphInvalidated, this, &QWaylandQuickSurface::invalidateTexture, Qt::DirectConnection);
+    connect(window, &QQuickWindow::sceneGraphAboutToStop, this, &QWaylandQuickSurface::invalidateTexture, Qt::DirectConnection);
     connect(this, &QWaylandSurface::windowPropertyChanged, d->windowPropertyMap, &QQmlPropertyMap::insert);
     connect(d->windowPropertyMap, &QQmlPropertyMap::valueChanged, this, &QWaylandSurface::setWindowProperty);
 
@@ -207,10 +212,11 @@ QObject *QWaylandQuickSurface::windowPropertyMap() const
 void QWaylandQuickSurface::updateTexture()
 {
     Q_D(QWaylandQuickSurface);
+    const bool update = d->buffer->update;
     if (d->buffer->update)
         d->buffer->createTexture();
     foreach (QWaylandSurfaceView *view, views())
-        static_cast<QWaylandSurfaceItem *>(view)->updateTexture();
+        static_cast<QWaylandSurfaceItem *>(view)->updateTexture(update);
 }
 
 void QWaylandQuickSurface::invalidateTexture()
@@ -218,7 +224,8 @@ void QWaylandQuickSurface::invalidateTexture()
     Q_D(QWaylandQuickSurface);
     d->buffer->invalidateTexture();
     foreach (QWaylandSurfaceView *view, views())
-        static_cast<QWaylandSurfaceItem *>(view)->updateTexture();
+        static_cast<QWaylandSurfaceItem *>(view)->updateTexture(true);
+    emit redraw();
 }
 
 bool QWaylandQuickSurface::clientRenderingEnabled() const
