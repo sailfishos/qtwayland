@@ -279,6 +279,11 @@ void Keyboard::updateModifierState(uint code, uint32_t state)
 
 void Keyboard::updateKeymap()
 {
+    // There must be no keys pressed when changing the keymap,
+    // see http://lists.freedesktop.org/archives/wayland-devel/2013-October/011395.html
+    if (!m_pendingKeymap || !m_keys.isEmpty())
+        return;
+
     m_pendingKeymap = false;
 #ifndef QT_NO_WAYLAND_XKB
     createXKBKeymap();
