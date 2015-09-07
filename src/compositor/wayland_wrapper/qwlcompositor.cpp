@@ -399,8 +399,15 @@ Qt::ScreenOrientation Compositor::screenOrientation() const
 
 void Compositor::setOutputGeometry(const QRect &geometry)
 {
-    if (m_output_global)
+    if (m_output_global) {
         m_output_global->setGeometry(geometry);
+
+        QSizeF p(window()->screen()->physicalSize());
+        QSizeF s(window()->screen()->size());
+        qreal w = p.width() * s.width() / geometry.width();
+        qreal h = p.height() * s.height() / geometry.height();
+        m_output_global->setPhysicalSize(QSize(w, h));
+    }
 }
 
 QRect Compositor::outputGeometry() const
