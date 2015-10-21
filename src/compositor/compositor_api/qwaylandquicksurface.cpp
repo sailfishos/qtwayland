@@ -53,6 +53,40 @@
 
 QT_BEGIN_NAMESPACE
 
+class QWaylandSurfaceTexture : public QSGTexture
+{
+public:
+    QWaylandSurfaceTexture(const QWaylandBufferRef &ref, QWaylandQuickSurface *surface)
+        : m_bufferRef(ref)
+        , m_textureSize(surface->size())
+        , m_textureId(m_bufferRef.createTexture())
+        , m_hasAlphaChannel(surface->useTextureAlpha())
+    {
+    }
+
+    ~QWaylandSurfaceTexture()
+    {
+        m_bufferRef.destroyTexture();
+    }
+
+    int textureId() const { return m_textureId; }
+    QSize textureSize() const { return m_textureSize; }
+    bool hasAlphaChannel() const { return m_hasAlphaChannel; }
+    bool hasMipmaps() const { return false; }
+
+    void bind()
+    {
+        glBindTexture(GL_TEXTURE_2D, m_textureId);
+        updateBindOptions();
+    }
+
+private:
+    QWaylandBufferRef m_bufferRef;
+    QSize m_textureSize;
+    int m_textureId;
+    bool m_hasAlphaChannel;
+};
+
 class BufferAttacher : public QWaylandBufferAttacher
 {
 public:
@@ -89,11 +123,7 @@ public:
             if (bufferRef.isShm()) {
                 texture = window->createTextureFromImage(bufferRef.image());
             } else {
-                QQuickWindow::CreateTextureOptions opt = 0;
-                if (surface->useTextureAlpha()) {
-                    opt |= QQuickWindow::TextureHasAlphaChannel;
-                }
-                texture = window->createTextureFromId(bufferRef.createTexture(), surface->size(), opt);
+                texture = new QWaylandSurfaceTexture(bufferRef, surface);
             }
             texture->bind();
         }
