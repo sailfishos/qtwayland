@@ -104,10 +104,10 @@ rm -f %{buildroot}/%{_libdir}/qt5/plugins/wayland-graphics-integration-client/li
 
 %if "%{name}" == "qt5-qtwayland-xcomposite_egl"
 %{_libdir}/qt5/plugins/platforms/libqwayland-egl.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration/client/libdrm-egl-server.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration/client/libwayland-egl.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration/server/libdrm-egl-server.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration/server/libwayland-egl.so
+%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libdrm-egl-server.so
+%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libwayland-egl.so
+%{_libdir}/qt5/plugins/wayland-graphics-integration-server/libdrm-egl-server.so
+%{_libdir}/qt5/plugins/wayland-graphics-integration-server/libwayland-egl.so
 %endif
 
 %if "%{name}" == "qt5-qtwayland-xcomposite_egl"
@@ -141,4 +141,3 @@ rm -f %{buildroot}/%{_libdir}/qt5/plugins/wayland-graphics-integration-client/li
 %files examples
 %defattr(-,root,root,-)
 %{_libdir}/qt5/examples/qtwayland/
-
