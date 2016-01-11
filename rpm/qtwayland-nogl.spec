@@ -1,6 +1,7 @@
 %define _qtmodule_snapshot_version 0.0-git855.e5601d283c
-Name:       qt5-qtwayland-nogl
-Summary:    Qt Wayland compositor, nogl variant
+%define _qtwayland_variant nogl
+Name:       qt5-qtwayland-%{_qtwayland_variant}
+Summary:    Qt Wayland compositor, %{_qtwayland_variant} variant
 Version:    0.0git855.e5601d283c
 Release:    1%{?dist}
 Group:      Qt/Qt
@@ -8,19 +9,22 @@ License:    LGPLv2.1 with exception or GPLv3
 URL:        http://qt.nokia.com
 Source0:    %{name}-%{version}.tar.bz2
 Source100:	precheckin.sh
-BuildRequires:  pkgconfig(Qt5Core)
-BuildRequires:  pkgconfig(Qt5Gui)
-BuildRequires:  pkgconfig(Qt5Widgets)
-BuildRequires:  pkgconfig(Qt5OpenGL)
-BuildRequires:  pkgconfig(Qt5PlatformSupport)
-BuildRequires:  pkgconfig(Qt5Qml)
-BuildRequires:  pkgconfig(Qt5Quick)
-BuildRequires:  pkgconfig(Qt5DBus)
-
-BuildRequires:  pkgconfig(wayland-client)
-%if "%{name}" == "qt5-qtwayland-nogl"
+BuildRequires:  pkgconfig(Qt5Core) >= 5.2.1
+BuildRequires:  pkgconfig(Qt5PlatformSupport) >= 5.2.1
+BuildRequires:  pkgconfig(Qt5Qml) >= 5.2.1
+BuildRequires:  pkgconfig(Qt5Quick) >= 5.2.1+git37
+BuildRequires:  pkgconfig(Qt5DBus) >= 5.2.1
+BuildRequires:  pkgconfig(wayland-server) >= 1.2.0
+BuildRequires:  pkgconfig(wayland-client) >= 1.2.0
+%if "%{_qtwayland_variant}" == "wayland_egl"
 BuildRequires:  pkgconfig(wayland-egl)
 %endif
+%if "%{_qtwayland_variant}" == "xcomposite_egl"
+BuildRequires:  pkgconfig(xcomposite)
+%endif
+
+BuildRequires:  qt5-qtgui-devel >= 5.2.1+git24
+Requires: qt5-qtgui >= 5.2.1+git24
 
 BuildRequires:  libxkbcommon-devel
 BuildRequires:  pkgconfig(glib-2.0)
@@ -34,10 +38,10 @@ Qt is a cross-platform application and UI framework. Using Qt, you can
 write web-enabled applications once and deploy them across desktop,
 mobile and embedded systems without rewriting the source code.
 .
-This package contains the Qt wayland compositor for nogl
+This package contains the Qt wayland compositor for %{_qtwayland_variant}
 
 %package devel
-Summary:        Qt Wayland compositor - development files
+Summary:        Qt Wayland compositor - development files for %{_qtwayland_variant}
 Group:          Qt/Qt
 Requires:       %{name} = %{version}-%{release}
 
@@ -46,7 +50,7 @@ Qt is a cross-platform application and UI framework. Using Qt, you can
 write web-enabled applications once and deploy them across desktop,
 mobile and embedded systems without rewriting the source code.
 .
-This package contains the Qt wayland compositor development files for nogl
+This package contains the Qt wayland compositor development files for %{_qtwayland_variant}
 
 %package examples
 Summary:        Qt Wayland compositor - examples
@@ -58,14 +62,14 @@ Qt is a cross-platform application and UI framework. Using Qt, you can
 write web-enabled applications once and deploy them across desktop,
 mobile and embedded systems without rewriting the source code.
 .
-This package contains the Qt wayland compositor examples for nogl
+This package contains the Qt wayland compositor examples for %{_qtwayland_variant}
 
 %prep
 %setup -q -n %{name}-%{version}
 
 %build
 export QTDIR=/usr/share/qt5
-export QT_WAYLAND_GL_CONFIG=nogl
+export QT_WAYLAND_GL_CONFIG=%{_qtwayland_variant}
 touch .git
 %qmake5 "QT_BUILD_PARTS += examples" "CONFIG += wayland-compositor" 
 
@@ -88,6 +92,7 @@ find %{buildroot}%{_libdir} -type f -name '*.prl' \
 rm -rf %{buildroot}/%{_includedir}/qt5/Qt
 rm -f %{buildroot}/%{_libdir}/qt5/plugins/wayland-graphics-integration-server/liblibhybris-egl-server.so
 rm -f %{buildroot}/%{_libdir}/qt5/plugins/wayland-graphics-integration-client/liblibhybris-egl-server.so
+rm -r %{buildroot}/%{_libdir}/qt5/plugins/wayland-decoration-client/libbradient.so
 
 %fdupes %{buildroot}/%{_includedir}
 
@@ -101,21 +106,22 @@ rm -f %{buildroot}/%{_libdir}/qt5/plugins/wayland-graphics-integration-client/li
 %{_libdir}/libQt5WaylandClient.so.5
 %{_libdir}/libQt5WaylandClient.so.5.*
 %{_libdir}/qt5/plugins/platforms/libqwayland-generic.so
-
-%if "%{name}" == "qt5-qtwayland-nogl"
-%{_libdir}/qt5/plugins/platforms/libqwayland-egl.so
 %{_libdir}/qt5/plugins/wayland-graphics-integration-client/libdrm-egl-server.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libwayland-egl.so
 %{_libdir}/qt5/plugins/wayland-graphics-integration-server/libdrm-egl-server.so
+
+%if "%{_qtwayland_variant}" == "wayland_egl"
+%{_libdir}/qt5/plugins/platforms/libqwayland-egl.so
+%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libwayland-egl.so
 %{_libdir}/qt5/plugins/wayland-graphics-integration-server/libwayland-egl.so
 %endif
 
-%if "%{name}" == "qt5-qtwayland-xcomposite_egl"
+%if "%{_qtwayland_variant}" == "xcomposite_egl"
 %{_libdir}/qt5/plugins/platforms/libqwayland-xcomposite-egl.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration/libxcomposite-egl.so
+%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libxcomposite-egl.so
+%{_libdir}/qt5/plugins/wayland-graphics-integration-server/libxcomposite-egl.so
 %endif
 
-%if "%{name}" == "qt5-qtwayland-nogl"
+%if "%{_qtwayland_variant}" == "nogl"
 %{_libdir}/qt5/plugins/platforms/libqwayland-nogl.so
 %endif
 
@@ -141,3 +147,4 @@ rm -f %{buildroot}/%{_libdir}/qt5/plugins/wayland-graphics-integration-client/li
 %files examples
 %defattr(-,root,root,-)
 %{_libdir}/qt5/examples/qtwayland/
+
