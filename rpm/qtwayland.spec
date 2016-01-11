@@ -1,6 +1,7 @@
 %define _qtmodule_snapshot_version 0.0-git855.e5601d283c
-Name:       qt5-qtwayland-wayland_egl
-Summary:    Qt Wayland compositor, wayland_egl variant
+%define _qtwayland_variant wayland_egl
+Name:       qt5-qtwayland-%{_qtwayland_variant}
+Summary:    Qt Wayland compositor, %{_qtwayland_variant} variant
 Version:    0.0git855.e5601d283c
 Release:    1%{?dist}
 Group:      Qt/Qt
@@ -15,9 +16,13 @@ BuildRequires:  pkgconfig(Qt5Quick) >= 5.2.1+git37
 BuildRequires:  pkgconfig(Qt5DBus) >= 5.2.1
 BuildRequires:  pkgconfig(wayland-server) >= 1.2.0
 BuildRequires:  pkgconfig(wayland-client) >= 1.2.0
-%if "%{name}" == "qt5-qtwayland-wayland_egl"
+%if "%{_qtwayland_variant}" == "wayland_egl"
 BuildRequires:  pkgconfig(wayland-egl)
 %endif
+%if "%{_qtwayland_variant}" == "xcomposite_egl"
+BuildRequires:  pkgconfig(xcomposite)
+%endif
+
 BuildRequires:  qt5-qtgui-devel >= 5.2.1+git24
 Requires: qt5-qtgui >= 5.2.1+git24
 
@@ -33,10 +38,10 @@ Qt is a cross-platform application and UI framework. Using Qt, you can
 write web-enabled applications once and deploy them across desktop,
 mobile and embedded systems without rewriting the source code.
 .
-This package contains the Qt wayland compositor for wayland_egl
+This package contains the Qt wayland compositor for %{_qtwayland_variant}
 
 %package devel
-Summary:        Qt Wayland compositor - development files
+Summary:        Qt Wayland compositor - development files for %{_qtwayland_variant}
 Group:          Qt/Qt
 Requires:       %{name} = %{version}-%{release}
 
@@ -45,7 +50,7 @@ Qt is a cross-platform application and UI framework. Using Qt, you can
 write web-enabled applications once and deploy them across desktop,
 mobile and embedded systems without rewriting the source code.
 .
-This package contains the Qt wayland compositor development files for wayland_egl
+This package contains the Qt wayland compositor development files for %{_qtwayland_variant}
 
 %package examples
 Summary:        Qt Wayland compositor - examples
@@ -57,14 +62,14 @@ Qt is a cross-platform application and UI framework. Using Qt, you can
 write web-enabled applications once and deploy them across desktop,
 mobile and embedded systems without rewriting the source code.
 .
-This package contains the Qt wayland compositor examples for wayland_egl
+This package contains the Qt wayland compositor examples for %{_qtwayland_variant}
 
 %prep
 %setup -q -n %{name}-%{version}
 
 %build
 export QTDIR=/usr/share/qt5
-export QT_WAYLAND_GL_CONFIG=wayland_egl
+export QT_WAYLAND_GL_CONFIG=%{_qtwayland_variant}
 touch .git
 %qmake5 "QT_BUILD_PARTS += examples" "CONFIG += wayland-compositor" 
 
@@ -101,21 +106,22 @@ rm -r %{buildroot}/%{_libdir}/qt5/plugins/wayland-decoration-client/libbradient.
 %{_libdir}/libQt5WaylandClient.so.5
 %{_libdir}/libQt5WaylandClient.so.5.*
 %{_libdir}/qt5/plugins/platforms/libqwayland-generic.so
-
-%if "%{name}" == "qt5-qtwayland-wayland_egl"
-%{_libdir}/qt5/plugins/platforms/libqwayland-egl.so
 %{_libdir}/qt5/plugins/wayland-graphics-integration-client/libdrm-egl-server.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libwayland-egl.so
 %{_libdir}/qt5/plugins/wayland-graphics-integration-server/libdrm-egl-server.so
+
+%if "%{_qtwayland_variant}" == "wayland_egl"
+%{_libdir}/qt5/plugins/platforms/libqwayland-egl.so
+%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libwayland-egl.so
 %{_libdir}/qt5/plugins/wayland-graphics-integration-server/libwayland-egl.so
 %endif
 
-%if "%{name}" == "qt5-qtwayland-xcomposite_egl"
+%if "%{_qtwayland_variant}" == "xcomposite_egl"
 %{_libdir}/qt5/plugins/platforms/libqwayland-xcomposite-egl.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration/libxcomposite-egl.so
+%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libxcomposite-egl.so
+%{_libdir}/qt5/plugins/wayland-graphics-integration-server/libxcomposite-egl.so
 %endif
 
-%if "%{name}" == "qt5-qtwayland-nogl"
+%if "%{_qtwayland_variant}" == "nogl"
 %{_libdir}/qt5/plugins/platforms/libqwayland-nogl.so
 %endif
 
