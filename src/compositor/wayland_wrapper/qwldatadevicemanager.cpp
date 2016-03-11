@@ -84,10 +84,15 @@ void DataDeviceManager::setCurrentSelectionSource(DataSource *source)
     //    2. make it possible for the compositor to participate in copy-paste
     // The downside is decreased performance, therefore this mode has to be enabled
     // explicitly in the compositors.
-    if (source && m_compositor->retainedSelectionEnabled()) {
+    if (m_compositor->retainedSelectionEnabled()) {
         m_retainedData.clear();
         m_retainedReadIndex = 0;
-        retain();
+
+        if (source) {
+            retain();
+        } else {
+            m_compositor->feedRetainedSelectionData(&m_retainedData);
+        }
     }
 }
 
@@ -185,8 +190,6 @@ struct wl_display *DataDeviceManager::display() const
 void DataDeviceManager::overrideSelection(const QMimeData &mimeData)
 {
     QStringList formats = mimeData.formats();
-    if (formats.isEmpty())
-        return;
 
     m_retainedData.clear();
     foreach (const QString &format, formats)
@@ -196,6 +199,8 @@ void DataDeviceManager::overrideSelection(const QMimeData &mimeData)
 
     m_compositorOwnsSelection = true;
 
+    if (formats.isEmpty())
+        return;
     QWaylandSeat *dev = m_compositor->defaultSeat();
     QWaylandSurface *focusSurface = dev->keyboardFocus();
     if (focusSurface)
@@ -226,7 +231,7 @@ bool DataDeviceManager::offerFromCompositorToClient(wl_resource *clientDataDevic
 
 void DataDeviceManager::offerRetainedSelection(wl_resource *clientDataDeviceResource)
 {
-    if (m_retainedData.formats().isEmpty())
+    if (!m_compositor->retainedSelectionEnabled())
         return;
 
     m_compositorOwnsSelection = true;
