@@ -70,12 +70,6 @@ DataDeviceManager::DataDeviceManager(Compositor *compositor)
 
 void DataDeviceManager::setCurrentSelectionSource(DataSource *source)
 {
-    if (m_current_selection_source && source
-            && m_current_selection_source->time() > source->time()) {
-        qDebug() << "Trying to set older selection";
-        return;
-    }
-
     m_compositorOwnsSelection = false;
 
     finishReadFromClient();
