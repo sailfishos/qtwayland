@@ -9,5 +9,5 @@ contains(CONFIG, wayland-compositor) {
         SUBDIRS += qml-compositor
     }
 
-    SUBDIRS += server-buffer
+#    SUBDIRS += server-buffer
 }
