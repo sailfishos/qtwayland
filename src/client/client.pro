@@ -1,5 +1,5 @@
 TARGET = QtWaylandClient
-QT += core-private gui-private
+QT += core-private gui-private dbus
 QT_FOR_PRIVATE += platformsupport-private
 
 MODULE=waylandclient
