@@ -1,3 +1,4 @@
+TARGET = compositor
 QT += core-private gui-private quick-private compositor-private
 
 LIBS += -lwayland-server

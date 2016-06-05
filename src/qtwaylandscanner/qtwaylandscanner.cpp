@@ -203,7 +203,7 @@ QByteArray waylandToCType(const QByteArray &waylandType, const QByteArray &inter
     else if (waylandType == "array")
         return "wl_array *";
     else if (waylandType == "object" || waylandType == "new_id")
-        return isServerSide() ? "struct ::wl_resource *" : interface.isEmpty() ? "struct ::wl_object *" : "struct ::" + interface + " *";
+        return isServerSide() ? "struct ::wl_resource *" : interface.isEmpty() ? QByteArray("struct ::wl_object *") : QByteArray("struct ::") + interface + QByteArray(" *");
     return waylandType;
 }
 
@@ -845,7 +845,7 @@ void process(QXmlStreamReader &xml, const QByteArray &headerPath, const QByteArr
                 printf("\n");
                 foreach (const WaylandEvent &e, interface.requests) {
                     const WaylandArgument *new_id = newIdArgument(e.arguments);
-                    printf("        %s", new_id ? (new_id->interface.isEmpty() ? "void *" : "struct ::" + new_id->interface + " *").constData() : "void ");
+                    printf("        %s", new_id ? (new_id->interface.isEmpty() ? QByteArray("void *") : QByteArray("struct ::") + new_id->interface + QByteArray(" *")).constData() : "void ");
                     printEvent(e);
                     printf(";\n");
                 }
@@ -961,7 +961,7 @@ void process(QXmlStreamReader &xml, const QByteArray &headerPath, const QByteArr
                 printf("\n");
                 const WaylandEvent &e = interface.requests.at(i);
                 const WaylandArgument *new_id = newIdArgument(e.arguments);
-                printf("    %s%s::", new_id ? (new_id->interface.isEmpty() ? "void *" : "struct ::" + new_id->interface + " *").constData() : "void ", interfaceName);
+                printf("    %s%s::", new_id ? (new_id->interface.isEmpty() ? QByteArray("void *") : QByteArray("struct ::") + new_id->interface + QByteArray(" *")).constData() : "void ", interfaceName);
                 printEvent(e);
                 printf("\n");
                 printf("    {\n");

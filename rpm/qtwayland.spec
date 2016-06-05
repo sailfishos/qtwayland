@@ -9,11 +9,12 @@ License:    LGPLv2.1 with exception or GPLv3
 URL:        http://qt.nokia.com
 Source0:    %{name}-%{version}.tar.bz2
 Source100:	precheckin.sh
-BuildRequires:  pkgconfig(Qt5Core) >= 5.2.1
-BuildRequires:  pkgconfig(Qt5PlatformSupport) >= 5.2.1
+BuildRequires:  qt5-qmake >= 5.6.2
+BuildRequires:  pkgconfig(Qt5Core) >= 5.6.2
+BuildRequires:  qt5-qtplatformsupport-devel >= 5.6.2
 BuildRequires:  pkgconfig(Qt5Qml) >= 5.2.1
 BuildRequires:  pkgconfig(Qt5Quick) >= 5.2.1+git37
-BuildRequires:  pkgconfig(Qt5DBus) >= 5.2.1
+BuildRequires:  pkgconfig(Qt5DBus) >= 5.6.2
 BuildRequires:  pkgconfig(wayland-server) >= 1.2.0
 BuildRequires:  pkgconfig(wayland-client) >= 1.2.0
 %if "%{_qtwayland_variant}" == "wayland_egl"
@@ -23,8 +24,8 @@ BuildRequires:  pkgconfig(wayland-egl)
 BuildRequires:  pkgconfig(xcomposite)
 %endif
 
-BuildRequires:  qt5-qtgui-devel >= 5.2.1+git24
-Requires: qt5-qtgui >= 5.2.1+git24
+BuildRequires:  qt5-qtgui-devel >= 5.6.2
+Requires: qt5-qtgui >= 5.6.2
 
 BuildRequires:  libxkbcommon-devel
 BuildRequires:  pkgconfig(glib-2.0)
@@ -146,5 +147,6 @@ rm -r %{buildroot}/%{_libdir}/qt5/plugins/wayland-decoration-client/libbradient.
 
 %files examples
 %defattr(-,root,root,-)
-%{_libdir}/qt5/examples/qtwayland/
+%{_libdir}/qt5/examples/qwindow-compositor
+%{_libdir}/qt5/examples/qml-compositor
 

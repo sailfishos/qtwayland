@@ -220,8 +220,7 @@ void QWaylandScreen::output_done()
         QWindowSystemInterface::handleScreenOrientationChange(screen(), m_orientation);
         mTransform = -1;
     }
-    QWindowSystemInterface::handleScreenGeometryChange(screen(), mGeometry);
-    QWindowSystemInterface::handleScreenAvailableGeometryChange(screen(), mGeometry);
+    QWindowSystemInterface::handleScreenGeometryChange(screen(), mGeometry, mGeometry);
     QWindowSystemInterface::handleScreenRefreshRateChange(screen(), refreshRate());
 }
 
