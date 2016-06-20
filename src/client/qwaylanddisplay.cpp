@@ -156,7 +156,12 @@ QWaylandDisplay::QWaylandDisplay(QWaylandIntegration *waylandIntegration)
 
 QWaylandDisplay::~QWaylandDisplay(void)
 {
+#if QT_VERSION >= 0x050500
+    foreach (QWaylandScreen *s, mScreens)
+        mWaylandIntegration->destroyScreen(s);
+#else
     qDeleteAll(mScreens);
+#endif
     mScreens.clear();
     delete mDndSelectionHandler.take();
     wl_display_disconnect(mDisplay);
