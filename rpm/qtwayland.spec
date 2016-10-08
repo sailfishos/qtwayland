@@ -12,8 +12,8 @@ Source100:	precheckin.sh
 BuildRequires:  qt5-qmake >= 5.6.2
 BuildRequires:  pkgconfig(Qt5Core) >= 5.6.2
 BuildRequires:  qt5-qtplatformsupport-devel >= 5.6.2
-BuildRequires:  pkgconfig(Qt5Qml) >= 5.2.1
-BuildRequires:  pkgconfig(Qt5Quick) >= 5.2.1+git37
+BuildRequires:  pkgconfig(Qt5Qml) >= 5.6.2
+BuildRequires:  pkgconfig(Qt5Quick) >= 5.6.2
 BuildRequires:  pkgconfig(Qt5DBus) >= 5.6.2
 BuildRequires:  pkgconfig(wayland-server) >= 1.2.0
 BuildRequires:  pkgconfig(wayland-client) >= 1.2.0
