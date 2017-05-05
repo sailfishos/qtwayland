@@ -54,6 +54,8 @@
 #include <QGuiApplication>
 #include <QScreen>
 
+#include <private/qsystrace_p.h>
+
 #include <wayland-server.h>
 
 QT_BEGIN_NAMESPACE
@@ -214,6 +216,8 @@ QRegion Surface::opaqueRegion() const
 
 void Surface::sendFrameCallback()
 {
+    QSystraceEvent trace("graphics", "QtWL::sendFrame");
+
     uint time = m_compositor->currentTimeMsecs();
     foreach (FrameCallback *callback, m_frameCallbacks) {
         if (callback->canSend) {
@@ -416,6 +420,7 @@ void Surface::surface_set_input_region(Resource *, struct wl_resource *region)
 
 void Surface::surface_commit(Resource *)
 {
+    QSystraceEvent trace("graphics", "QtWL::commit");
     m_damage = m_pending.damage;
 
     if (m_pending.buffer || m_pending.newlyAttached) {

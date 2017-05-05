@@ -48,6 +48,8 @@
 #include <qpa/qplatformopenglcontext.h>
 #endif
 
+#include <private/qsystrace_p.h>
+
 #include <QtCore/QDebug>
 
 QT_BEGIN_NAMESPACE
@@ -158,6 +160,7 @@ bool SurfaceBuffer::isShmBuffer() const
 
 void SurfaceBuffer::sendRelease()
 {
+    QSystraceEvent trace("graphics", "QtWL::release");
     Q_ASSERT(m_buffer);
     wl_buffer_send_release(m_buffer);
 }
