@@ -137,6 +137,12 @@ static const uint32_t KeyTbl[] = {
 
     XKB_KEY_XF86Phone,               Qt::Key_ToggleCallHangup,
 
+    // Hack: there are no directly suitable xkbcommon keycodes to use for camera + camera focus
+    // so mapping camera hardware keys into these in xkeyboard-config and then back to
+    // sensible qt values here.
+    XKB_KEY_XF86WebCam,              Qt::Key_Camera,
+    XKB_KEY_XF86ContrastAdjust,      Qt::Key_CameraFocus,
+
     0,                          0
 };
 
