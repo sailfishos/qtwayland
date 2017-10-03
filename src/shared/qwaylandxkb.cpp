@@ -67,6 +67,7 @@ static const uint32_t KeyTbl[] = {
     XKB_KEY_Up,                      Qt::Key_Up,
     XKB_KEY_Right,                   Qt::Key_Right,
     XKB_KEY_Down,                    Qt::Key_Down,
+    XKB_KEY_Select,                  Qt::Key_Select,
     XKB_KEY_Prior,                   Qt::Key_PageUp,
     XKB_KEY_Next,                    Qt::Key_PageDown,
 
@@ -134,6 +135,8 @@ static const uint32_t KeyTbl[] = {
     XKB_KEY_XF86AudioMute,           Qt::Key_VolumeMute,
 
     XKB_KEY_XF86Phone,               Qt::Key_ToggleCallHangup,
+    XKB_KEY_XF86Back,                Qt::Key_Back,
+    XKB_KEY_XF86MenuKB,              Qt::Key_MenuKB,
 
     // Hack: there are no directly suitable xkbcommon keycodes to use for camera + camera focus
     // so mapping camera hardware keys into these in xkeyboard-config and then back to
