@@ -95,6 +95,7 @@ static const uint32_t KeyTbl[] = {
     XKB_KEY_KP_Tab,                  Qt::Key_Tab,
     XKB_KEY_KP_Enter,                Qt::Key_Enter,
     XKB_KEY_KP_Home,                 Qt::Key_Home,
+    XKB_KEY_XF86HomePage,            Qt::Key_HomePage,
     XKB_KEY_KP_Left,                 Qt::Key_Left,
     XKB_KEY_KP_Up,                   Qt::Key_Up,
     XKB_KEY_KP_Right,                Qt::Key_Right,
