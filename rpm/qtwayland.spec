@@ -11,7 +11,10 @@ Source0:    %{name}-%{version}.tar.bz2
 Source100:	precheckin.sh
 BuildRequires:  qt5-qmake >= 5.9.5
 BuildRequires:  pkgconfig(Qt5Core) >= 5.9.5
-BuildRequires:  qt5-qtplatformsupport-devel
+BuildRequires:  qt5-qtfontdatabasesupport-devel
+BuildRequires:  qt5-qteventdispatchersupport-devel
+BuildRequires:  qt5-qtthemesupport-devel
+BuildRequires:  qt5-qtservicesupport-devel
 BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  pkgconfig(Qt5DBus)
