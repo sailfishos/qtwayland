@@ -1,7 +1,7 @@
 TARGET = QtWaylandClient
 MODULE = waylandclient
 
-QT += core-private gui-private
+QT += core-private gui-private dbus
 QT_FOR_PRIVATE += service_support-private
 QT_PRIVATE += fontdatabase_support-private eventdispatcher_support-private theme_support-private
 
@@ -19,6 +19,7 @@ qtConfig(xkbcommon-evdev): \
     QMAKE_USE_PRIVATE += xkbcommon_evdev
 
 QMAKE_USE += wayland-client
+QMAKE_USE_PRIVATE += freetype fontconfig glib
 
 INCLUDEPATH += $$PWD/../shared
 
