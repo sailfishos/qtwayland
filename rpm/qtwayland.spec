@@ -19,8 +19,8 @@ BuildRequires:  qt5-qtservicesupport-devel
 BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  pkgconfig(Qt5DBus)
-BuildRequires:  pkgconfig(wayland-server) >= 1.2.0
-BuildRequires:  pkgconfig(wayland-client) >= 1.2.0
+BuildRequires:  pkgconfig(wayland-server) >= 1.6.0
+BuildRequires:  pkgconfig(wayland-client) >= 1.6.0
 %if "%{_qtwayland_variant}" == "wayland_egl"
 BuildRequires:  pkgconfig(wayland-egl)
 %endif
