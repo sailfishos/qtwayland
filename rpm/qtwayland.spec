@@ -83,8 +83,6 @@ make %{?_smp_mflags}
 rm -rf %{buildroot}
 %qmake_install
 
-rm %{buildroot}%{_libdir}/cmake/Qt5Gui/Qt5Gui_.cmake
-
 # Fix wrong path in pkgconfig files
 find %{buildroot}%{_libdir}/pkgconfig -type f -name '*.pc' \
 -exec perl -pi -e "s, -L%{_builddir}/?\S+,,g" {} \;
@@ -105,51 +103,51 @@ rm -r %{buildroot}/%{_libdir}/qt5/plugins/wayland-decoration-client/libbradient.
 
 %files
 %defattr(-,root,root,-)
-%{_libdir}/libQt5Compositor.so.5
-%{_libdir}/libQt5Compositor.so.5.*
-%{_libdir}/libQt5WaylandClient.so.5
-%{_libdir}/libQt5WaylandClient.so.5.*
-%{_libdir}/qt5/plugins/platforms/libqwayland-generic.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libdrm-egl-server.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-server/libdrm-egl-server.so
+#%{_libdir}/libQt5Compositor.so.5
+#%{_libdir}/libQt5Compositor.so.5.*
+#%{_libdir}/libQt5WaylandClient.so.5
+#%{_libdir}/libQt5WaylandClient.so.5.*
+#%{_libdir}/qt5/plugins/platforms/libqwayland-generic.so
+#%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libdrm-egl-server.so
+#%{_libdir}/qt5/plugins/wayland-graphics-integration-server/libdrm-egl-server.so
 
 %if "%{_qtwayland_variant}" == "wayland_egl"
-%{_libdir}/qt5/plugins/platforms/libqwayland-egl.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libwayland-egl.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-server/libwayland-egl.so
+#%{_libdir}/qt5/plugins/platforms/libqwayland-egl.so
+#%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libwayland-egl.so
+#%{_libdir}/qt5/plugins/wayland-graphics-integration-server/libwayland-egl.so
 %endif
 
 %if "%{_qtwayland_variant}" == "xcomposite_egl"
-%{_libdir}/qt5/plugins/platforms/libqwayland-xcomposite-egl.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libxcomposite-egl.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-server/libxcomposite-egl.so
+#%{_libdir}/qt5/plugins/platforms/libqwayland-xcomposite-egl.so
+#%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libxcomposite-egl.so
+#%{_libdir}/qt5/plugins/wayland-graphics-integration-server/libxcomposite-egl.so
 %endif
 
 %if "%{_qtwayland_variant}" == "nogl"
-%{_libdir}/qt5/plugins/platforms/libqwayland-nogl.so
+#%{_libdir}/qt5/plugins/platforms/libqwayland-nogl.so
 %endif
 
 %files devel
 %defattr(-,root,root,-)
-%{_libdir}/libQt5Compositor.so
-%{_includedir}/qt5/*
-%{_libdir}/libQt5Compositor.la
-%{_libdir}/libQt5Compositor.prl
-%{_libdir}/pkgconfig/Qt5Compositor.pc
-%{_libdir}/cmake/Qt5Compositor/*
-%{_datadir}/qt5/mkspecs/modules/qt_lib_waylandclient.pri
-%{_datadir}/qt5/mkspecs/modules/qt_lib_waylandclient_private.pri
-%{_datadir}/qt5/mkspecs/modules/qt_lib_compositor.pri
-%{_datadir}/qt5/mkspecs/modules/qt_lib_compositor_private.pri
-%{_libdir}/libQt5WaylandClient.so
-%{_libdir}/libQt5WaylandClient.la
-%{_libdir}/libQt5WaylandClient.prl
-%{_libdir}/pkgconfig/Qt5WaylandClient.pc
-%{_libdir}/cmake/Qt5WaylandClient/*
-%{_libdir}/qt5/bin/qtwaylandscanner
+#%{_libdir}/libQt5Compositor.so
+#%{_includedir}/qt5/*
+#%{_libdir}/libQt5Compositor.la
+#%{_libdir}/libQt5Compositor.prl
+#%{_libdir}/pkgconfig/Qt5Compositor.pc
+#%{_libdir}/cmake/Qt5Compositor/*
+#%{_datadir}/qt5/mkspecs/modules/qt_lib_waylandclient.pri
+#%{_datadir}/qt5/mkspecs/modules/qt_lib_waylandclient_private.pri
+#%{_datadir}/qt5/mkspecs/modules/qt_lib_compositor.pri
+#%{_datadir}/qt5/mkspecs/modules/qt_lib_compositor_private.pri
+#%{_libdir}/libQt5WaylandClient.so
+#%{_libdir}/libQt5WaylandClient.la
+#%{_libdir}/libQt5WaylandClient.prl
+#%{_libdir}/pkgconfig/Qt5WaylandClient.pc
+#%{_libdir}/cmake/Qt5WaylandClient/*
+#%{_libdir}/qt5/bin/qtwaylandscanner
 
 %files examples
 %defattr(-,root,root,-)
-%{_libdir}/qt5/examples/qwindow-compositor
-%{_libdir}/qt5/examples/qml-compositor
+#%{_libdir}/qt5/examples/qwindow-compositor
+#%{_libdir}/qt5/examples/qml-compositor
 
