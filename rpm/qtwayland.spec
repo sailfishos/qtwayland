@@ -1,14 +1,11 @@
-%define _qtmodule_snapshot_version 0.0-git855.e5601d283c
-%define _qtwayland_variant wayland_egl
-Name:       qt5-qtwayland-%{_qtwayland_variant}
-Summary:    Qt Wayland compositor, %{_qtwayland_variant} variant
+Name:       qt5-qtwayland
+Summary:    Qt Wayland
 Version:    5.9.5
 Release:    1%{?dist}
 Group:      Qt/Qt
 License:    LGPLv3
 URL:        https://www.qt.io
 Source0:    %{name}-%{version}.tar.bz2
-Source100:	precheckin.sh
 BuildRequires:  qt5-qmake >= 5.9.5
 BuildRequires:  pkgconfig(Qt5Core) >= 5.9.5
 BuildRequires:  qt5-qtfontdatabasesupport-devel
@@ -21,13 +18,7 @@ BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  pkgconfig(Qt5DBus)
 BuildRequires:  pkgconfig(wayland-server) >= 1.6.0
 BuildRequires:  pkgconfig(wayland-client) >= 1.6.0
-%if "%{_qtwayland_variant}" == "wayland_egl"
 BuildRequires:  pkgconfig(wayland-egl)
-%endif
-%if "%{_qtwayland_variant}" == "xcomposite_egl"
-BuildRequires:  pkgconfig(xcomposite)
-%endif
-
 BuildRequires:  qt5-qtgui-devel
 
 BuildRequires:  libxkbcommon-devel
@@ -35,55 +26,120 @@ BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  libffi-devel
 BuildRequires:  fdupes
 
-Requires:       xkeyboard-config
+Requires:       %{name}-client = %{version}-%{release}
+Requires:       %{name}-compositor = %{version}-%{release}
 
 %description
 Qt is a cross-platform application and UI framework. Using Qt, you can
 write web-enabled applications once and deploy them across desktop,
 mobile and embedded systems without rewriting the source code.
-.
-This package contains the Qt wayland compositor for %{_qtwayland_variant}
+
+This package contains the QtWayland client and compositor libraries
 
 %package devel
-Summary:        Qt Wayland compositor - development files for %{_qtwayland_variant}
+Summary:        Development files for QtWayland
 Group:          Qt/Qt
-Requires:       %{name} = %{version}-%{release}
+Requires:       %{name}-client-devel = %{version}-%{release}
+Requires:       %{name}-compositor-devel = %{version}-%{release}
 
 %description devel
 Qt is a cross-platform application and UI framework. Using Qt, you can
 write web-enabled applications once and deploy them across desktop,
 mobile and embedded systems without rewriting the source code.
-.
-This package contains the Qt wayland compositor development files for %{_qtwayland_variant}
 
-%package examples
-Summary:        Qt Wayland compositor - examples
-Group:          Qt/Qt
-Requires:       %{name} = %{version}-%{release}
+This package contains the Qt wayland development files.
 
-%description examples
-Qt is a cross-platform application and UI framework. Using Qt, you can
-write web-enabled applications once and deploy them across desktop,
-mobile and embedded systems without rewriting the source code.
-.
-This package contains the Qt wayland compositor examples for %{_qtwayland_variant}
+%package client
+Summary:            The QtWaylandClient library
+Requires:           xkeyboard-config
+Requires(post):     /sbin/ldconfig
+Requires(postun):   /sbin/ldconfig
+
+%description client
+This package contains the QtWaylandClient library.
+
+%package client-devel
+Summary:    Development files for QtWaylandClient
+Requires:   %{name}-client = %{version}-%{release}
+Requires:   %{name}-tool-qtwaylandscanner = %{version}-%{release}
+
+%description client-devel
+This package contains the files necessary to develop
+applications that use QtWaylandClient
+
+%package compositor
+Summary:            The QtWaylandCompositor library
+Requires:           xkeyboard-config
+Requires(post):     /sbin/ldconfig
+Requires(postun):   /sbin/ldconfig
+
+%description compositor
+This package contains the QtWaylandCompositor library.
+
+%package compositor-devel
+Summary:    Development files for QtWaylandCompositor
+Requires:   %{name}-compositor = %{version}-%{release}
+Requires:   %{name}-tool-qtwaylandscanner = %{version}-%{release}
+
+%description compositor-devel
+This package contains the files necessary to develop
+applications that use QtWaylandCompositor
+
+%package tool-qtwaylandscanner
+Summary:    The qtwaylandscanner development tool
+
+%description tool-qtwaylandscanner
+%{summary}.
+
+%package plugin-platform-egl
+Summary:    The EGL QtWayland platform plugin
+
+%description plugin-platform-egl
+%{summary}.
+
+%package plugin-platform-generic
+Summary:    The generic QtWayland platform plugin
+
+%description plugin-platform-generic
+%{summary}.
+
+%package plugin-graphics-integration-client-drm-egl
+Summary:    DRM EGL client graphics integration plugin for QtWayland
+
+%description plugin-graphics-integration-client-drm-egl
+%{summary}.
+
+%package plugin-graphics-integration-client-qt-egl
+Summary:    Qt EGL plugin client graphics integration plugin for QtWayland
+
+%description plugin-graphics-integration-client-qt-egl
+%{summary}.
+
+%package plugin-graphics-integration-server-drm-egl
+Summary:    DRM EGL server graphics integration plugin for QtWayland
+
+%description plugin-graphics-integration-server-drm-egl
+%{summary}.
+
+%package plugin-graphics-integration-server-wayland-egl
+Summary:    Wayland EGL server graphics integration plugin for QtWayland
+
+%description plugin-graphics-integration-server-wayland-egl
+%{summary}.
 
 %prep
 %setup -q -n %{name}-%{version}
 
 %build
 export QTDIR=/usr/share/qt5
-export QT_WAYLAND_GL_CONFIG=%{_qtwayland_variant}
 touch .git
-%qmake5 "QT_BUILD_PARTS += examples" "CONFIG += wayland-compositor" 
+%qmake5
 
 make %{?_smp_mflags}
 
 %install
 rm -rf %{buildroot}
 %qmake_install
-
-rm %{buildroot}%{_libdir}/cmake/Qt5Gui/Qt5Gui_.cmake
 
 # Fix wrong path in pkgconfig files
 find %{buildroot}%{_libdir}/pkgconfig -type f -name '*.pc' \
@@ -92,12 +148,6 @@ find %{buildroot}%{_libdir}/pkgconfig -type f -name '*.pc' \
 find %{buildroot}%{_libdir} -type f -name '*.prl' \
 -exec sed -i -e "/^QMAKE_PRL_BUILD_DIR/d;s/\(QMAKE_PRL_LIBS =\).*/\1/" {} \;
 
-# We don't need qt5/Qt/
-rm -rf %{buildroot}/%{_includedir}/qt5/Qt
-rm -f %{buildroot}/%{_libdir}/qt5/plugins/wayland-graphics-integration-server/liblibhybris-egl-server.so
-rm -f %{buildroot}/%{_libdir}/qt5/plugins/wayland-graphics-integration-client/liblibhybris-egl-server.so
-rm -r %{buildroot}/%{_libdir}/qt5/plugins/wayland-decoration-client/libbradient.so
-
 %fdupes %{buildroot}/%{_includedir}
 
 %post -p /sbin/ldconfig
@@ -105,51 +155,65 @@ rm -r %{buildroot}/%{_libdir}/qt5/plugins/wayland-decoration-client/libbradient.
 
 %files
 %defattr(-,root,root,-)
-%{_libdir}/libQt5Compositor.so.5
-%{_libdir}/libQt5Compositor.so.5.*
-%{_libdir}/libQt5WaylandClient.so.5
-%{_libdir}/libQt5WaylandClient.so.5.*
-%{_libdir}/qt5/plugins/platforms/libqwayland-generic.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libdrm-egl-server.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-server/libdrm-egl-server.so
-
-%if "%{_qtwayland_variant}" == "wayland_egl"
-%{_libdir}/qt5/plugins/platforms/libqwayland-egl.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libwayland-egl.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-server/libwayland-egl.so
-%endif
-
-%if "%{_qtwayland_variant}" == "xcomposite_egl"
-%{_libdir}/qt5/plugins/platforms/libqwayland-xcomposite-egl.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libxcomposite-egl.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-server/libxcomposite-egl.so
-%endif
-
-%if "%{_qtwayland_variant}" == "nogl"
-%{_libdir}/qt5/plugins/platforms/libqwayland-nogl.so
-%endif
+%exclude %{_libdir}/qt5/plugins/wayland-shell-integration/libivi-shell.so
 
 %files devel
 %defattr(-,root,root,-)
-%{_libdir}/libQt5Compositor.so
-%{_includedir}/qt5/*
-%{_libdir}/libQt5Compositor.la
-%{_libdir}/libQt5Compositor.prl
-%{_libdir}/pkgconfig/Qt5Compositor.pc
-%{_libdir}/cmake/Qt5Compositor/*
-%{_datadir}/qt5/mkspecs/modules/qt_lib_waylandclient.pri
-%{_datadir}/qt5/mkspecs/modules/qt_lib_waylandclient_private.pri
-%{_datadir}/qt5/mkspecs/modules/qt_lib_compositor.pri
-%{_datadir}/qt5/mkspecs/modules/qt_lib_compositor_private.pri
+%exclude %{_includedir}/qt5/Qt
+%exclude %{_libdir}/cmake/Qt5Gui
+
+%files client
+%defattr(-,root,root,-)
+%{_libdir}/libQt5WaylandClient.so.*
+
+%files client-devel
+%{_includedir}/qt5/QtWaylandClient
+exclude %{_libdir}/libQt5WaylandClient.la
 %{_libdir}/libQt5WaylandClient.so
-%{_libdir}/libQt5WaylandClient.la
 %{_libdir}/libQt5WaylandClient.prl
 %{_libdir}/pkgconfig/Qt5WaylandClient.pc
 %{_libdir}/cmake/Qt5WaylandClient/*
+%{_datadir}/qt5/mkspecs/modules/qt_lib_waylandclient.pri
+%{_datadir}/qt5/mkspecs/modules/qt_lib_waylandclient_private.pri
+
+%files compositor
+%defattr(-,root,root,-)
+%{_libdir}/libQt5WaylandCompositor.so.*
+
+%files compositor-devel
+%defattr(-,root,root,-)
+%{_includedir}/qt5/Qt5WaylandCompositor
+%exclude %{_libdir}/libQt5WaylandCompositor.so
+%{_libdir}/libQt5WaylandCompositor.so
+%{_libdir}/libQt5WaylandCompositor.prl
+%{_libdir}/pkgconfig/Qt5WaylandCompositor.pc
+%{_datadir}/qt5/mkspecs/modules/qt_lib_waylandcompositor.pri
+%{_datadir}/qt5/mkspecs/modules/qt_lib_waylandcompositor_private.pri
+
+%files tool-qtwaylandscanner
+%defattr(-,root,root,-)
 %{_libdir}/qt5/bin/qtwaylandscanner
 
-%files examples
+%files plugin-platform-egl
 %defattr(-,root,root,-)
-%{_libdir}/qt5/examples/qwindow-compositor
-%{_libdir}/qt5/examples/qml-compositor
+%{_libdir}/qt5/plugins/platforms/libqwayland-egl.so
 
+%files plugin-platform-generic
+%defattr(-,root,root,-)
+%{_libdir}/qt5/plugins/platforms/libqwayland-generic.so
+
+%files plugin-graphics-integration-client-drm-egl
+%defattr(-,root,root,-)
+%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libdrm-egl-server.so
+
+%files plugin-graphics-integration-client-qt-egl
+%defattr(-,root,root,-)
+%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libqt-plugin-wayland-egl.so
+
+%files plugin-graphics-integration-server-drm-egl
+%defattr(-,root,root,-)
+%{_libdir}/qt5/plugins/wayland-graphics-integration-server/libdrm-egl-server.so
+
+%files plugin-graphics-integration-server-wayland-egl
+%defattr(-,root,root,-)
+%{_libdir}/qt5/plugins/wayland-graphics-integration-server/libwayland-egl.so
