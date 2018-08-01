@@ -64,7 +64,7 @@ class QKeyEvent;
 
 namespace QtWayland {
 
-class QtKeyExtensionGlobal : public QWaylandCompositorExtensionTemplate<QtKeyExtensionGlobal>, public QtWaylandServer::qt_key_extension
+class Q_WAYLAND_COMPOSITOR_EXPORT QtKeyExtensionGlobal : public QWaylandCompositorExtensionTemplate<QtKeyExtensionGlobal>, public QtWaylandServer::qt_key_extension
 {
     Q_OBJECT
 public:
