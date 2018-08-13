@@ -495,6 +495,8 @@ WaylandEglClientBuffer::~WaylandEglClientBuffer()
     auto *p = WaylandEglClientBufferIntegrationPrivate::get(m_integration);
 
     if (p) {
+        const bool usingLocalContext = p->ensureContext();
+
         for (auto image : d->egl_images)
             p->egl_destroy_image(p->egl_display, image);
 
@@ -503,6 +505,9 @@ WaylandEglClientBuffer::~WaylandEglClientBuffer()
 
         for (auto *texture : d->textures)
             delete texture;
+
+        if (usingLocalContext)
+            p->localContext->doneCurrent();
     }
     delete d;
 }
