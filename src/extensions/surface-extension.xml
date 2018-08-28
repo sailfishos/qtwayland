@@ -50,6 +50,10 @@
 	    <arg name="visible" type="int"/>
 	</event>
 
+        <event name="client_rendering_enabled">
+            <arg name="enabled" type="int"/>
+        </event>
+
         <event name="set_generic_property">
             <arg name="name" type="string"/>
             <arg name="value" type="array"/>

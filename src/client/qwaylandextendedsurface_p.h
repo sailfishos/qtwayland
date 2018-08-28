@@ -72,6 +72,8 @@ public:
     QWaylandExtendedSurface(QWaylandWindow *window);
     ~QWaylandExtendedSurface();
 
+    bool isClientRenderingEnabled() const;
+
     void setContentOrientationMask(Qt::ScreenOrientations mask);
 
     void updateGenericProperty(const QString &name, const QVariant &value);
@@ -80,11 +82,13 @@ public:
 
 private:
     void extended_surface_onscreen_visibility(int32_t visibility) override;
+    void extended_surface_client_rendering_enabled(int enabled) override;
     void extended_surface_set_generic_property(const QString &name, wl_array *value) override;
     void extended_surface_close() override;
 
     QWaylandWindow *m_window;
     QVariantMap m_properties;
+    bool m_clientRenderingEnabled;
 };
 
 }

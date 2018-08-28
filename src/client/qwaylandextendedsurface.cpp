@@ -56,12 +56,18 @@ namespace QtWaylandClient {
 QWaylandExtendedSurface::QWaylandExtendedSurface(QWaylandWindow *window)
     : QtWayland::qt_extended_surface(window->display()->windowExtension()->get_extended_surface(window->object()))
     , m_window(window)
+    , m_clientRenderingEnabled(true)
 {
 }
 
 QWaylandExtendedSurface::~QWaylandExtendedSurface()
 {
     qt_extended_surface_destroy(object());
+}
+
+bool QWaylandExtendedSurface::isClientRenderingEnabled() const
+{
+    return m_clientRenderingEnabled;
 }
 
 void QWaylandExtendedSurface::updateGenericProperty(const QString &name, const QVariant &value)
@@ -87,6 +93,22 @@ void QWaylandExtendedSurface::setContentOrientationMask(Qt::ScreenOrientations m
     if (mask & Qt::InvertedLandscapeOrientation)
         wlmask |= QT_EXTENDED_SURFACE_ORIENTATION_INVERTEDLANDSCAPEORIENTATION;
     set_content_orientation_mask(wlmask);
+}
+
+void QWaylandExtendedSurface::extended_surface_client_rendering_enabled(int enabled)
+{
+
+    if (m_clientRenderingEnabled != (enabled != 0)) {
+        m_clientRenderingEnabled = enabled != 0;
+
+        QWindow * const window = m_window->window();
+
+        if (window->isVisible()) {
+            QWindowSystemInterface::handleExposeEvent(window, m_clientRenderingEnabled
+                    ? QRect(QPoint(), m_window->geometry().size())
+                    : QRect());
+        }
+    }
 }
 
 void QWaylandExtendedSurface::extended_surface_onscreen_visibility(int32_t visibility)

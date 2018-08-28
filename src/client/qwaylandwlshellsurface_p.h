@@ -92,6 +92,9 @@ public:
     void setWindowFlags(Qt::WindowFlags flags) override;
     void sendProperty(const QString &name, const QVariant &value) override;
 
+    bool isExposed() const override;
+    bool handleExpose(const QRegion &) override;
+
     void setType(Qt::WindowType type, QWaylandWindow *transientParent) override;
 
 private:

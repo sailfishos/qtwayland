@@ -83,7 +83,7 @@ void ExtendedSurface::sendGenericProperty(const QString &name, const QVariant &v
 
 void ExtendedSurface::sendOnScreenVisibilityChange(bool onScreen)
 {
-    setVisibility(onScreen ? QWindow::AutomaticVisibility : QWindow::Hidden);
+    send_client_rendering_enabled(onScreen ? 1 : 0);
 }
 
 void ExtendedSurface::setVisibility(QWindow::Visibility visibility)

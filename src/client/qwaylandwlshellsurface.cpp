@@ -123,6 +123,16 @@ void QWaylandWlShellSurface::sendProperty(const QString &name, const QVariant &v
         m_extendedWindow->updateGenericProperty(name, value);
 }
 
+bool QWaylandWlShellSurface::isExposed() const
+{
+    return !m_extendedWindow || m_extendedWindow->isClientRenderingEnabled();
+}
+
+bool QWaylandWlShellSurface::handleExpose(const QRegion &)
+{
+    return m_extendedWindow && !m_extendedWindow->isClientRenderingEnabled();
+}
+
 void QWaylandWlShellSurface::setMaximized()
 {
     m_maximized = true;
