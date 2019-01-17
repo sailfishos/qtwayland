@@ -37,4 +37,5 @@ qtHaveModule(quick) {
         compositor_api/qwaylandsurfaceitem.h
 
     QT += qml quick
+    CONFIG += egl
 }

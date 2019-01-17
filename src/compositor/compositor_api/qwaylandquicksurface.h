@@ -48,6 +48,7 @@ struct wl_client;
 
 QT_BEGIN_NAMESPACE
 
+class QQuickWindow;
 class QSGTexture;
 
 class QWaylandSurfaceItem;
@@ -80,7 +81,7 @@ Q_SIGNALS:
     void clientRenderingEnabledChanged();
 
 private:
-    void updateTexture();
+    void updateTexture(QQuickWindow *window);
     void invalidateTexture();
 
 };
