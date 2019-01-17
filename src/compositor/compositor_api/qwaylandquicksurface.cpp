@@ -39,11 +39,17 @@
 **
 ****************************************************************************/
 
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+
 #include <QSGTexture>
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
 #include <QOpenGLTexture>
 #include <QQuickWindow>
 #include <QDebug>
 #include <QQmlPropertyMap>
+#include <QThreadStorage>
 
 #include "qwaylandquicksurface.h"
 #include "qwaylandquickcompositor.h"
@@ -155,6 +161,64 @@ public:
 };
 
 
+namespace {
+
+class BufferReleaser : public QEvent
+{
+public:
+    BufferReleaser(const QVector<QWaylandBufferRef> &buffers)
+        : QEvent(MaxUser)
+        , m_buffers(buffers)
+    {
+    }
+
+    static void enqueue(const QWaylandBufferRef &buffer, QQuickWindow *window)
+    {
+        if (!buffer) {
+            return;
+        }
+
+        // With a threaded renderer this is one window -> one thread so the vector will never
+        // have more than one item and the thread will be destroyed before the window is so this
+        // could have just been a vector of buffers. But a non threaded renderer there are multiple
+        // windows in a thread that will outlive them all.
+        struct WindowBuffers { QPointer<QQuickWindow> window; QVector<QWaylandBufferRef> buffers; };
+        static QThreadStorage<QVector<WindowBuffers>> windowBufferStorage;
+        QVector<WindowBuffers> &windowBuffers = windowBufferStorage.localData();
+        for (auto it = windowBuffers.begin(); it != windowBuffers.end(); ) {
+            if (it->window == window) {
+                it->buffers.append(buffer);
+                return;
+            } else if (!it->window) {
+                it = windowBuffers.erase(it);
+            } else {
+                ++it;
+            }
+        }
+        windowBuffers.append({ window, { buffer } });
+
+        QObject::connect(window, &QQuickWindow::frameSwapped, [&windowBuffers, window]() {
+            auto it = windowBuffers.begin();
+            do {
+                if (it == windowBuffers.end()) {
+                    return; // This should never happen
+                }
+            } while (it->window != window);
+
+            if (!it->buffers.isEmpty()) {
+                BufferReleaser *releaser = new BufferReleaser(it->buffers);
+                it->buffers.clear();
+                QCoreApplication::postEvent(window, releaser);
+            };
+        });
+    }
+
+private:
+    const QVector<QWaylandBufferRef> m_buffers;
+};
+
+}
+
 class QWaylandQuickSurfacePrivate : public QWaylandSurfacePrivate
 {
 public:
@@ -197,7 +261,7 @@ QWaylandQuickSurface::QWaylandQuickSurface(wl_client *client, quint32 id, int ve
     setBufferAttacher(d->buffer);
 
     QQuickWindow *window = static_cast<QQuickWindow *>(compositor->window());
-    connect(window, &QQuickWindow::beforeSynchronizing, this, &QWaylandQuickSurface::updateTexture, Qt::DirectConnection);
+    connect(window, &QQuickWindow::beforeSynchronizing, this, [this, window]() { updateTexture(window); }, Qt::DirectConnection);
     connect(window, &QQuickWindow::sceneGraphInvalidated, this, &QWaylandQuickSurface::invalidateTexture, Qt::DirectConnection);
     connect(window, &QQuickWindow::sceneGraphAboutToStop, this, &QWaylandQuickSurface::invalidateTexture, Qt::DirectConnection);
     connect(this, &QWaylandSurface::windowPropertyChanged, d->windowPropertyMap, &QQmlPropertyMap::insert);
@@ -239,7 +303,7 @@ QObject *QWaylandQuickSurface::windowPropertyMap() const
 }
 
 
-void QWaylandQuickSurface::updateTexture()
+void QWaylandQuickSurface::updateTexture(QQuickWindow *window)
 {
     Q_D(QWaylandQuickSurface);
     const bool update = d->buffer->update;
@@ -247,6 +311,8 @@ void QWaylandQuickSurface::updateTexture()
         d->buffer->createTexture();
     foreach (QWaylandSurfaceView *view, views())
         static_cast<QWaylandSurfaceItem *>(view)->updateTexture(update);
+
+    BufferReleaser::enqueue(d->buffer->bufferRef, window);
 }
 
 void QWaylandQuickSurface::invalidateTexture()
