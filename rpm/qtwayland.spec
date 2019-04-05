@@ -175,6 +175,12 @@ find %{buildroot}%{_libdir} -type f -name "*_*Plugin.cmake" \
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
 
+%post compositor -p /sbin/ldconfig
+%postun compositor -p /sbin/ldconfig
+
+%post client -p /sbin/ldconfig
+%postun client -p /sbin/ldconfig
+
 %files
 %defattr(-,root,root,-)
 %exclude %{_libdir}/qt5/plugins/wayland-shell-integration/libivi-shell.so
