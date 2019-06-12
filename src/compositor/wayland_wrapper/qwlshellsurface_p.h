@@ -132,6 +132,8 @@ private:
 
     QSet<uint32_t> m_pings;
 
+    bool m_destroyed;
+
     void shell_surface_destroy_resource(Resource *resource) Q_DECL_OVERRIDE;
 
     void shell_surface_move(Resource *resource,

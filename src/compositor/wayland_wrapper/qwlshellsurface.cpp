@@ -98,6 +98,7 @@ ShellSurface::ShellSurface(Shell *shell, wl_client *client, uint32_t id, Surface
     , m_moveGrabber(0)
     , m_popupGrabber(0)
     , m_popupSerial()
+    , m_destroyed(false)
 {
     m_view = surface->compositor()->waylandCompositor()->createView(surface->waylandSurface());
     connect(surface->waylandSurface(), &QWaylandSurface::configure, this, &ShellSurface::configure);
@@ -106,6 +107,11 @@ ShellSurface::ShellSurface(Shell *shell, wl_client *client, uint32_t id, Surface
 
 ShellSurface::~ShellSurface()
 {
+    if (!m_destroyed) {
+        m_destroyed = true;
+
+        wl_resource_destroy(resource()->handle);
+    }
 }
 
 void ShellSurface::sendConfigure(uint32_t edges, int32_t width, int32_t height)
@@ -192,10 +198,14 @@ void ShellSurface::requestSize(const QSize &size)
 
 void ShellSurface::shell_surface_destroy_resource(Resource *)
 {
-    if (m_popupGrabber)
-        m_popupGrabber->removePopup(this);
+    if (!m_destroyed) {
+        m_destroyed = true;
 
-    delete this;
+        if (m_popupGrabber)
+            m_popupGrabber->removePopup(this);
+
+        delete this;
+    }
 }
 
 void ShellSurface::shell_surface_move(Resource *resource,
