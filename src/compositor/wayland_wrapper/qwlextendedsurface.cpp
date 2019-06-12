@@ -65,6 +65,7 @@ ExtendedSurface::ExtendedSurface(struct wl_client *client, uint32_t id, int vers
     , QtWaylandServer::qt_extended_surface(client, id, version)
     , m_surface(surface)
     , m_windowFlags(0)
+    , m_destroyed(false)
 {
     Q_ASSERT(surface->extendedSurface() == 0);
     surface->setExtendedSurface(this);
@@ -74,6 +75,12 @@ ExtendedSurface::~ExtendedSurface()
 {
     if (m_surface)
         m_surface->setExtendedSurface(0);
+
+    if (!m_destroyed) {
+        m_destroyed = true;
+
+        wl_resource_destroy(resource()->handle);
+    }
 }
 
 void ExtendedSurface::sendGenericProperty(const QString &name, const QVariant &variant)
@@ -179,9 +186,12 @@ void ExtendedSurface::extended_surface_set_window_flags(Resource *resource, int3
     emit m_surface->waylandSurface()->windowFlagsChanged(windowFlags);
 }
 
-void ExtendedSurface::extended_surface_destroy_resource(Resource *)
+void ExtendedSurface::extended_surface_destroy_resource(Resource *resource)
 {
-    delete this;
+    if (!m_destroyed) {
+        m_destroyed = true;
+        delete this;
+    }
 }
 
 void ExtendedSurface::extended_surface_raise(Resource *)

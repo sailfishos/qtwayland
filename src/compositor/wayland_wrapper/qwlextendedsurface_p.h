@@ -121,6 +121,8 @@ private:
     QByteArray m_authenticationToken;
     QVariantMap m_windowProperties;
 
+    bool m_destroyed;
+
     void extended_surface_update_generic_property(Resource *resource,
                                                   const QString &name,
                                                   struct wl_array *value) Q_DECL_OVERRIDE;
