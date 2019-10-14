@@ -134,13 +134,13 @@ QByteArray QWaylandWindowManagerIntegration::desktopEnvironment() const
 void QWaylandWindowManagerIntegration::openUrl_helper(const QUrl &url)
 {
     if (isInitialized()) {
-        QByteArray data = url.toString().toUtf8();
+        QString data = url.toString();
 
         static const int chunkSize = 128;
         while (!data.isEmpty()) {
-            QByteArray chunk = data.left(chunkSize);
+            QString chunk = data.left(chunkSize);
             data = data.mid(chunkSize);
-            open_url(!data.isEmpty(), QString::fromUtf8(chunk));
+            open_url(!data.isEmpty(), chunk);
         }
     }
 }
