@@ -2,6 +2,8 @@
 **
 ** Copyright (C) 2012 Digia Plc and/or its subsidiary(-ies).
 ** Contact: http://www.qt-project.org/legal
+** Copyright (c) 2014 - 2019 Jolla Ltd.
+** Copyright (c) 2020 Open Mobile Platform LLC.
 **
 ** This file is part of the Qt Compositor.
 **
@@ -43,6 +45,8 @@
 #include <QtCompositor/qwaylandcompositor.h>
 #include <QtCompositor/qwaylandinput.h>
 
+#include "wayland_wrapper/qwlsurface_p.h"
+
 #include <QtGui/QKeyEvent>
 #include <QtGui/QGuiApplication>
 #include <QtGui/QScreen>
@@ -56,6 +60,138 @@
 QT_BEGIN_NAMESPACE
 
 QMutex *QWaylandSurfaceItem::mutex = 0;
+
+class QWaylandSurfaceTextureNode : public QSGGeometryNode
+{
+public:
+    QWaylandSurfaceTextureNode()
+        : m_geometry(QSGGeometry::defaultAttributes_TexturedPoint2D(), 0)
+    {
+        QSGGeometryNode::setGeometry(&m_geometry);
+        setMaterial(&m_material);
+    }
+
+    virtual void setTexture(QSGTexture *texture)
+    {
+        m_material.setTexture(texture);
+    }
+
+    void setGeometry(const QSizeF &itemSize, const QSize &surfaceSize, const QRegion &rectangles, bool yInverted)
+    {
+        m_geometry.allocate(rectangles.rectCount() * 6);
+        QSGGeometry::TexturedPoint2D *vertices = static_cast<QSGGeometry::TexturedPoint2D *>(m_geometry.vertexData());
+
+        for (const QRect &rectangle : rectangles.rects()) {
+            struct Rect { qreal left, top, right, bottom; };
+            const Rect texture =  {
+                qreal(rectangle.left()) / surfaceSize.width(),
+                qreal(rectangle.top()) / surfaceSize.height(),
+                qreal(rectangle.right() + 1) / surfaceSize.width(),
+                qreal(rectangle.bottom() + 1) / surfaceSize.height(),
+            };
+
+            const Rect position = {
+                texture.left * itemSize.width(),
+                (yInverted ? texture.bottom : texture.top) * itemSize.height(),
+                texture.right * itemSize.width(),
+                (yInverted ? texture.top : texture.bottom) * itemSize.height()
+            };
+
+            vertices[1].set(position.left, position.bottom, texture.left, texture.bottom);  // Bottom left.
+            vertices[2].set(position.left, position.top, texture.left, texture.top);        // Top left.
+            vertices[3].set(position.right, position.bottom, texture.right, texture.bottom);// Bottom right.
+            vertices[4].set(position.right, position.top, texture.right, texture.top);      // Top right.
+
+            vertices[0] = vertices[1];
+            vertices[5] = vertices[4];
+
+            vertices += 6;
+        }
+
+        markDirty(QSGNode::DirtyGeometry);
+    }
+
+private:
+    QSGTextureMaterial m_material;
+    QSGGeometry m_geometry;
+};
+
+class QWaylandSurfaceOpaqueTextureNode : public QWaylandSurfaceTextureNode
+{
+public:
+    QWaylandSurfaceOpaqueTextureNode()
+    {
+        setOpaqueMaterial(&m_opaqueMaterial);
+    }
+
+    void setTexture(QSGTexture *texture) override
+    {
+        QWaylandSurfaceTextureNode::setTexture(texture);
+
+        m_opaqueMaterial.setTexture(texture);
+        m_opaqueMaterial.setFlag(QSGMaterial::Blending, false);
+    }
+
+private:
+    QSGOpaqueTextureMaterial m_opaqueMaterial;
+};
+
+class QWaylandSurfaceNode : public QSGNode
+{
+public:
+    QWaylandSurfaceNode()
+    {
+    }
+
+    void setTexture(QSGTexture *texture)
+    {
+        m_translucentNode.setTexture(texture);
+        m_opaqueNode.setTexture(texture);
+
+        m_translucentNode.markDirty(QSGNode::DirtyMaterial);
+        m_opaqueNode.markDirty(QSGNode::DirtyMaterial);
+    }
+
+    void setGeometry(
+            const QSizeF &itemSize,
+            const QSize &surfaceSize,
+            const QRegion &opaqueRectangles,
+            bool yInverted)
+    {
+        if (m_itemSize == itemSize && m_surfaceSize == surfaceSize && m_opaqueRectangles == opaqueRectangles) {
+            return;
+        }
+
+        m_itemSize = itemSize;
+        m_surfaceSize = surfaceSize;
+        m_opaqueRectangles = opaqueRectangles;
+
+        QRegion translucentRectangles(0, 0, surfaceSize.width(), surfaceSize.height());
+        translucentRectangles -= opaqueRectangles;
+
+        removeAllChildNodes();
+
+        if (!translucentRectangles.isEmpty()) {
+            appendChildNode(&m_translucentNode);
+
+            m_translucentNode.setGeometry(itemSize, surfaceSize, translucentRectangles, yInverted);
+        }
+
+        if (!opaqueRectangles.isEmpty()) {
+            appendChildNode(&m_opaqueNode);
+
+            m_opaqueNode.setGeometry(itemSize, surfaceSize, opaqueRectangles, yInverted);
+        }
+    }
+
+private:
+    QWaylandSurfaceTextureNode m_translucentNode;
+    QWaylandSurfaceOpaqueTextureNode m_opaqueNode;
+    QRegion m_opaqueRectangles;
+    QSizeF m_itemSize;
+    QSize m_surfaceSize;
+
+};
 
 class QWaylandSurfaceTextureProvider : public QSGTextureProvider
 {
@@ -356,26 +492,24 @@ void QWaylandSurfaceItem::updateTexture(bool changed)
 
 QSGNode *QWaylandSurfaceItem::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
 {
-    bool mapped = surface() && surface()->isMapped();
+    QWaylandSurface * const surface = this->surface();
+    QtWayland::Surface * const handle = surface && surface->isMapped() ? surface->handle() : nullptr;
 
-    if (!mapped || !m_provider->t || !m_paintEnabled) {
+    if (!handle || !m_provider->t || !m_paintEnabled) {
         delete oldNode;
         return 0;
     }
 
-    QSGSimpleTextureNode *node = static_cast<QSGSimpleTextureNode *>(oldNode);
+    QWaylandSurfaceNode *node = static_cast<QWaylandSurfaceNode *>(oldNode);
 
     if (!node)
-        node = new QSGSimpleTextureNode();
-    node->setTexture(m_provider->t);
+        node = new QWaylandSurfaceNode();
+
     // Surface textures come by default with the OpenGL coordinate system, which is inverted relative
     // to the QtQuick one. So we're dealing with a double invertion here, and if isYInverted() returns
     // true it means it is NOT inverted relative to QtQuick, while if it returns false it means it IS.
-    if (surface()->isYInverted()) {
-        node->setRect(0, 0, width(), height());
-    } else {
-        node->setRect(0, height(), width(), -height());
-    }
+    node->setGeometry(QSize(width(), height()), handle->size(), handle->opaqueRegion(), !surface->isYInverted());
+    node->setTexture(m_provider->t);
 
     return node;
 }

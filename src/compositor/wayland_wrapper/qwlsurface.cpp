@@ -2,6 +2,8 @@
 **
 ** Copyright (C) 2012 Digia Plc and/or its subsidiary(-ies).
 ** Contact: http://www.qt-project.org/legal
+** Copyright (c) 2014 - 2019 Jolla Ltd.
+** Copyright (c) 2020 Open Mobile Platform LLC.
 **
 ** This file is part of the Qt Compositor.
 **
@@ -122,6 +124,7 @@ Surface::Surface(struct wl_client *client, uint32_t id, int version, QWaylandCom
     , m_subSurface(0)
     , m_inputPanelSurface(0)
     , m_inputRegion(infiniteRegion())
+    , m_opaqueRegion(infiniteRegion())
     , m_transientParent(0)
     , m_transientInactive(false)
     , m_transientOffset(QPointF(0, 0))
@@ -133,6 +136,7 @@ Surface::Surface(struct wl_client *client, uint32_t id, int version, QWaylandCom
     m_pending.buffer = 0;
     m_pending.newlyAttached = false;
     m_pending.inputRegion = infiniteRegion();
+    m_pending.opaqueRegion = infiniteRegion();
 }
 
 Surface::~Surface()
@@ -406,7 +410,7 @@ void Surface::surface_frame(Resource *resource, uint32_t callback)
 
 void Surface::surface_set_opaque_region(Resource *, struct wl_resource *region)
 {
-    m_opaqueRegion = region ? Region::fromResource(region)->region() : QRegion();
+    m_pending.opaqueRegion = region ? Region::fromResource(region)->region() : infiniteRegion();
 }
 
 void Surface::surface_set_input_region(Resource *, struct wl_resource *region)
@@ -450,6 +454,7 @@ void Surface::surface_commit(Resource *)
     m_pendingFrameCallbacks.clear();
 
     m_inputRegion = m_pending.inputRegion.intersected(QRect(QPoint(), m_size));
+    m_opaqueRegion = m_pending.opaqueRegion.intersected(QRect(QPoint(), m_size));
 
     emit m_waylandSurface->redraw();
 }
