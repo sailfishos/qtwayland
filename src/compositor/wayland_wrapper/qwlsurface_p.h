@@ -2,6 +2,8 @@
 **
 ** Copyright (C) 2012 Digia Plc and/or its subsidiary(-ies).
 ** Contact: http://www.qt-project.org/legal
+** Copyright (c) 2014 - 2019 Jolla Ltd.
+** Copyright (c) 2020 Open Mobile Platform LLC.
 **
 ** This file is part of the Qt Compositor.
 **
@@ -178,6 +180,7 @@ protected:
         QPoint offset;
         bool newlyAttached;
         QRegion inputRegion;
+        QRegion opaqueRegion;
     } m_pending;
 
     QPoint m_lastLocalMousePos;
