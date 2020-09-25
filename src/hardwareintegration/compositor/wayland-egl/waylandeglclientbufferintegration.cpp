@@ -54,6 +54,10 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
+#ifndef EGL_WAYLAND_BUFFER_WL
+#define EGL_WAYLAND_BUFFER_WL           0x31D5
+#endif
+
 /* Needed for compatibility with Mesa older than 10.0. */
 typedef EGLBoolean (EGLAPIENTRYP PFNEGLQUERYWAYLANDBUFFERWL_compat) (EGLDisplay dpy, struct wl_resource *buffer, EGLint attribute, EGLint *value);
 

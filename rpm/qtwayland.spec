@@ -2,13 +2,12 @@
 %define _qtwayland_variant wayland_egl
 Name:       qt5-qtwayland-%{_qtwayland_variant}
 Summary:    Qt Wayland compositor, %{_qtwayland_variant} variant
-Version:    0.0git855.e5601d283c
+Version:    5.4.0
 Release:    1%{?dist}
-Group:      Qt/Qt
 License:    LGPLv2.1 with exception or GPLv3
-URL:        http://qt.nokia.com
+URL:        https://www.qt.io/
 Source0:    %{name}-%{version}.tar.bz2
-Source100:	precheckin.sh
+Source100:  precheckin.sh
 BuildRequires:  qt5-qmake >= 5.6.2
 BuildRequires:  pkgconfig(Qt5Core) >= 5.6.2
 BuildRequires:  qt5-qtplatformsupport-devel >= 5.6.2
@@ -43,7 +42,6 @@ This package contains the Qt wayland compositor for %{_qtwayland_variant}
 
 %package devel
 Summary:        Qt Wayland compositor - development files for %{_qtwayland_variant}
-Group:          Qt/Qt
 Requires:       %{name} = %{version}-%{release}
 
 %description devel
@@ -55,7 +53,6 @@ This package contains the Qt wayland compositor development files for %{_qtwayla
 
 %package examples
 Summary:        Qt Wayland compositor - examples
-Group:          Qt/Qt
 Requires:       %{name} = %{version}-%{release}
 
 %description examples
@@ -66,18 +63,17 @@ mobile and embedded systems without rewriting the source code.
 This package contains the Qt wayland compositor examples for %{_qtwayland_variant}
 
 %prep
-%setup -q -n %{name}-%{version}
+%autosetup -n %{name}-%{version}
 
 %build
 export QTDIR=/usr/share/qt5
 export QT_WAYLAND_GL_CONFIG=%{_qtwayland_variant}
 touch .git
-%qmake5 "QT_BUILD_PARTS += examples" "CONFIG += wayland-compositor" 
+%qmake5 "QT_BUILD_PARTS += examples" "CONFIG += wayland-compositor"
 
-make %{?_smp_mflags}
+%make_build
 
 %install
-rm -rf %{buildroot}
 %qmake_install
 
 rm %{buildroot}%{_libdir}/cmake/Qt5Gui/Qt5Gui_.cmake
@@ -102,6 +98,7 @@ rm -r %{buildroot}/%{_libdir}/qt5/plugins/wayland-decoration-client/libbradient.
 
 %files
 %defattr(-,root,root,-)
+%license LICENSE.LGPL* LGPL_EXCEPTION.txt
 %{_libdir}/libQt5Compositor.so.5
 %{_libdir}/libQt5Compositor.so.5.*
 %{_libdir}/libQt5WaylandClient.so.5
