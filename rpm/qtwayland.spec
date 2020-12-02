@@ -4,7 +4,7 @@ Name:       qt5-qtwayland-%{_qtwayland_variant}
 Summary:    Qt Wayland compositor, %{_qtwayland_variant} variant
 Version:    5.4.0
 Release:    1%{?dist}
-License:    LGPLv2.1 with exception or GPLv3
+License:    LGPLv2 with exception or GPLv3 or Qt Commercial
 URL:        https://www.qt.io/
 Source0:    %{name}-%{version}.tar.bz2
 Source100:  precheckin.sh
@@ -98,7 +98,8 @@ rm -r %{buildroot}/%{_libdir}/qt5/plugins/wayland-decoration-client/libbradient.
 
 %files
 %defattr(-,root,root,-)
-%license LICENSE.LGPL* LGPL_EXCEPTION.txt
+%license LICENSE.LGPL LGPL_EXCEPTION.txt
+%license LICENSE.GPL LICENSE.FDL
 %{_libdir}/libQt5Compositor.so.5
 %{_libdir}/libQt5Compositor.so.5.*
 %{_libdir}/libQt5WaylandClient.so.5
