@@ -449,6 +449,8 @@ void Surface::surface_destroy_resource(Resource *)
 
 void Surface::surface_destroy(Resource *resource)
 {
+    emit m_waylandSurface->clientDestroyedSurface();
+
     wl_resource_destroy(resource->handle);
 }
 
