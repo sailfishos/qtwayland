@@ -214,6 +214,7 @@ Q_SIGNALS:
     void visibilityChanged();
     void pong();
     void surfaceDestroyed();
+    void clientDestroyedSurface();
 
     void configure(bool hasBuffer);
     void redraw();
