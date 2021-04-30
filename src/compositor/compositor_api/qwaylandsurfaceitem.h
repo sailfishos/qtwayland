@@ -100,7 +100,6 @@ protected:
     void keyReleaseEvent(QKeyEvent *event);
 
     void touchEvent(QTouchEvent *event);
-    void mouseUngrabEvent() Q_DECL_OVERRIDE;
 
 public Q_SLOTS:
     virtual void takeFocus(QWaylandInputDevice *device = Q_NULLPTR);
