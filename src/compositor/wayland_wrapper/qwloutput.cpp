@@ -127,7 +127,7 @@ void Output::output_bind_resource(Resource *resource)
 
     send_mode(resource->handle, mode_current | mode_preferred,
               m_mode.size.width(), m_mode.size.height(),
-              m_mode.refreshRate);
+              m_mode.refreshRate * 1000);
 
     if (resource->version() >= 2) {
         send_scale(resource->handle, m_scaleFactor);
