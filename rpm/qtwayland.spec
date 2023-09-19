@@ -43,7 +43,6 @@ This package contains the Qt wayland compositor development files for wayland_eg
 %autosetup -n %{name}-%{version}
 
 %build
-export QTDIR=/usr/share/qt5
 export QT_WAYLAND_GL_CONFIG=wayland_egl
 touch .git
 %qmake5 "CONFIG += wayland-compositor"
@@ -53,20 +52,20 @@ touch .git
 %install
 %qmake_install
 
-rm %{buildroot}%{_libdir}/cmake/Qt5Gui/Qt5Gui_.cmake
+rm %{buildroot}%{_qt5_libdir}/cmake/Qt5Gui/Qt5Gui_.cmake
 
 # Fix wrong path in pkgconfig files
-find %{buildroot}%{_libdir}/pkgconfig -type f -name '*.pc' \
+find %{buildroot}%{_qt5_libdir}/pkgconfig -type f -name '*.pc' \
 -exec perl -pi -e "s, -L%{_builddir}/?\S+,,g" {} \;
 # Fix wrong path in prl files
-find %{buildroot}%{_libdir} -type f -name '*.prl' \
+find %{buildroot}%{_qt5_libdir} -type f -name '*.prl' \
 -exec sed -i -e "/^QMAKE_PRL_BUILD_DIR/d;s/\(QMAKE_PRL_LIBS =\).*/\1/" {} \;
 
 # We don't need qt5/Qt/
-rm -rf %{buildroot}/%{_includedir}/qt5/Qt
-rm -f %{buildroot}/%{_libdir}/qt5/plugins/wayland-graphics-integration-server/liblibhybris-egl-server.so
-rm -f %{buildroot}/%{_libdir}/qt5/plugins/wayland-graphics-integration-client/liblibhybris-egl-server.so
-rm -r %{buildroot}/%{_libdir}/qt5/plugins/wayland-decoration-client/libbradient.so
+rm -rf %{buildroot}/%{_qt5_includedir}/Qt
+rm -f %{buildroot}/%{_qt5_plugindir}/wayland-graphics-integration-server/liblibhybris-egl-server.so
+rm -f %{buildroot}/%{_qt5_plugindir}/wayland-graphics-integration-client/liblibhybris-egl-server.so
+rm -r %{buildroot}/%{_qt5_plugindir}/wayland-decoration-client/libbradient.so
 
 %fdupes %{buildroot}/%{_includedir}
 
@@ -77,33 +76,33 @@ rm -r %{buildroot}/%{_libdir}/qt5/plugins/wayland-decoration-client/libbradient.
 %defattr(-,root,root,-)
 %license LICENSE.LGPL* LGPL_EXCEPTION.txt
 %license LICENSE.GPL* LICENSE.FDL
-%{_libdir}/libQt5Compositor.so.5
-%{_libdir}/libQt5Compositor.so.5.*
-%{_libdir}/libQt5WaylandClient.so.5
-%{_libdir}/libQt5WaylandClient.so.5.*
-%{_libdir}/qt5/plugins/platforms/libqwayland-generic.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libdrm-egl-server.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-server/libdrm-egl-server.so
-%{_libdir}/qt5/plugins/platforms/libqwayland-egl.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-client/libwayland-egl.so
-%{_libdir}/qt5/plugins/wayland-graphics-integration-server/libwayland-egl.so
+%{_qt5_libdir}/libQt5Compositor.so.5
+%{_qt5_libdir}/libQt5Compositor.so.5.*
+%{_qt5_libdir}/libQt5WaylandClient.so.5
+%{_qt5_libdir}/libQt5WaylandClient.so.5.*
+%{_qt5_plugindir}/platforms/libqwayland-generic.so
+%{_qt5_plugindir}/wayland-graphics-integration-client/libdrm-egl-server.so
+%{_qt5_plugindir}/wayland-graphics-integration-server/libdrm-egl-server.so
+%{_qt5_plugindir}/platforms/libqwayland-egl.so
+%{_qt5_plugindir}/wayland-graphics-integration-client/libwayland-egl.so
+%{_qt5_plugindir}/wayland-graphics-integration-server/libwayland-egl.so
 
 %files devel
 %defattr(-,root,root,-)
-%{_libdir}/libQt5Compositor.so
-%{_includedir}/qt5/*
-%{_libdir}/libQt5Compositor.la
-%{_libdir}/libQt5Compositor.prl
-%{_libdir}/pkgconfig/Qt5Compositor.pc
-%{_libdir}/cmake/Qt5Compositor/*
-%{_datadir}/qt5/mkspecs/modules/qt_lib_waylandclient.pri
-%{_datadir}/qt5/mkspecs/modules/qt_lib_waylandclient_private.pri
-%{_datadir}/qt5/mkspecs/modules/qt_lib_compositor.pri
-%{_datadir}/qt5/mkspecs/modules/qt_lib_compositor_private.pri
-%{_libdir}/libQt5WaylandClient.so
-%{_libdir}/libQt5WaylandClient.la
-%{_libdir}/libQt5WaylandClient.prl
-%{_libdir}/pkgconfig/Qt5WaylandClient.pc
-%{_libdir}/cmake/Qt5WaylandClient/*
-%{_libdir}/qt5/bin/qtwaylandscanner
+%{_qt5_libdir}/libQt5Compositor.so
+%{_qt5_includedir}/*
+%{_qt5_libdir}/libQt5Compositor.la
+%{_qt5_libdir}/libQt5Compositor.prl
+%{_qt5_libdir}/pkgconfig/Qt5Compositor.pc
+%{_qt5_libdir}/cmake/Qt5Compositor/*
+%{_qt5_archdatadir}/mkspecs/modules/qt_lib_waylandclient.pri
+%{_qt5_archdatadir}/mkspecs/modules/qt_lib_waylandclient_private.pri
+%{_qt5_archdatadir}/mkspecs/modules/qt_lib_compositor.pri
+%{_qt5_archdatadir}/mkspecs/modules/qt_lib_compositor_private.pri
+%{_qt5_libdir}/libQt5WaylandClient.so
+%{_qt5_libdir}/libQt5WaylandClient.la
+%{_qt5_libdir}/libQt5WaylandClient.prl
+%{_qt5_libdir}/pkgconfig/Qt5WaylandClient.pc
+%{_qt5_libdir}/cmake/Qt5WaylandClient/*
+%{_qt5_bindir}/qtwaylandscanner
 
