@@ -92,7 +92,6 @@ rm -r %{buildroot}/%{_libdir}/qt5/plugins/wayland-decoration-client/libbradient.
 %defattr(-,root,root,-)
 %{_libdir}/libQt5Compositor.so
 %{_includedir}/qt5/*
-%{_libdir}/libQt5Compositor.la
 %{_libdir}/libQt5Compositor.prl
 %{_libdir}/pkgconfig/Qt5Compositor.pc
 %{_libdir}/cmake/Qt5Compositor/*
@@ -101,7 +100,6 @@ rm -r %{buildroot}/%{_libdir}/qt5/plugins/wayland-decoration-client/libbradient.
 %{_datadir}/qt5/mkspecs/modules/qt_lib_compositor.pri
 %{_datadir}/qt5/mkspecs/modules/qt_lib_compositor_private.pri
 %{_libdir}/libQt5WaylandClient.so
-%{_libdir}/libQt5WaylandClient.la
 %{_libdir}/libQt5WaylandClient.prl
 %{_libdir}/pkgconfig/Qt5WaylandClient.pc
 %{_libdir}/cmake/Qt5WaylandClient/*
