@@ -16,4 +16,4 @@ HEADERS += \
         $$PWD/drmeglserverbufferintegration.h
 
 CONFIG += wayland-scanner
-WAYLANDCLIENTSOURCES += $$PWD/../../../extensions/drm-egl-server-buffer.xml
+WAYLANDCLIENTSOURCES += $$PWD/../../../extensions/drm-egl-server-buffer.xml $$PWD/../../../extensions/server-buffer-extension.xml

@@ -17,4 +17,4 @@ HEADERS += \
     $$PWD/libhybriseglserverbufferintegration.h
 
 CONFIG += wayland-scanner
-WAYLANDSERVERSOURCES += $$PWD/../../../extensions/libhybris-egl-server-buffer.xml
+WAYLANDSERVERSOURCES += $$PWD/../../../extensions/libhybris-egl-server-buffer.xml $$PWD/../../../extensions/server-buffer-extension.xml
