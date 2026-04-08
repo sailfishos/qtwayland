@@ -103,7 +103,6 @@ public:
     void sendKeyReleaseEvent(uint code);
 
     Surface *focus() const;
-    Resource *focusResource() const;
 
     void focused(Surface* surface);
     void key(uint32_t serial, uint32_t time, uint32_t key, uint32_t state);
@@ -128,7 +127,6 @@ Q_SIGNALS:
 
 protected:
     void keyboard_bind_resource(Resource *resource);
-    void keyboard_destroy_resource(Resource *resource);
     void keyboard_release(Resource *resource) Q_DECL_OVERRIDE;
 
 private:
@@ -149,7 +147,6 @@ private:
 
     KeyboardGrabber* m_grab;
     Surface *m_focus;
-    Resource *m_focusResource;
     WlListener m_focusDestroyListener;
 
     QVector<uint32_t> m_keys;

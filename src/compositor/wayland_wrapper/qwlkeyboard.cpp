@@ -64,7 +64,6 @@ Keyboard::Keyboard(Compositor *compositor, InputDevice *seat)
     , m_seat(seat)
     , m_grab(this)
     , m_focus()
-    , m_focusResource()
     , m_keys()
     , m_modsDepressed()
     , m_modsLatched()
@@ -118,18 +117,13 @@ KeyboardGrabber *Keyboard::currentGrab() const
 
 void Keyboard::checkFocusResource(wl_keyboard::Resource *keyboardResource)
 {
-    if (!keyboardResource || !m_focus)
-        return;
-
-    // this is already the current  resource, do no send enter twice
-    if (m_focusResource == keyboardResource)
+    if (!m_focus)
         return;
 
     // check if new wl_keyboard resource is from the client owning the focus surface
     struct ::wl_client *focusedClient = m_focus->resource()->client();
     if (focusedClient == keyboardResource->client()) {
         sendEnter(m_focus, keyboardResource);
-        m_focusResource = keyboardResource;
     }
 }
 
@@ -143,23 +137,21 @@ void Keyboard::sendEnter(Surface *surface, wl_keyboard::Resource *keyboardResour
 void Keyboard::focused(Surface *surface)
 {
     if (m_focus != surface) {
-        if (m_focusResource) {
-            uint32_t serial = wl_display_next_serial(m_compositor->wl_display());
-            send_leave(m_focusResource->handle, serial, m_focus->resource()->handle);
+        if (m_focus) {
+            for (Resource *res : resourceMap().values(m_focus->resource()->client())) {
+                uint32_t serial = wl_display_next_serial(m_compositor->wl_display());
+                send_leave(res->handle, serial, m_focus->resource()->handle);
+            }
         }
         m_focusDestroyListener.reset();
         if (surface) {
             m_focusDestroyListener.listenForDestruction(surface->resource()->handle);
+            for (Resource *res : resourceMap().values(surface->resource()->client())) {
+                sendEnter(surface, res);
+            }
         }
     }
 
-    Resource *resource = surface ? resourceMap().value(surface->resource()->client()) : 0;
-
-    if (resource && (m_focus != surface || m_focusResource != resource)) {
-        sendEnter(surface, resource);
-    }
-
-    m_focusResource = resource;
     m_focus = surface;
     Q_EMIT focusChanged(m_focus);
 }
@@ -188,7 +180,6 @@ void Keyboard::focusDestroyed(void *data)
     m_focusDestroyListener.reset();
 
     m_focus = 0;
-    m_focusResource = 0;
 }
 
 void Keyboard::sendKeyModifiers(wl_keyboard::Resource *resource, uint32_t serial)
@@ -211,11 +202,6 @@ Surface *Keyboard::focus() const
     return m_focus;
 }
 
-QtWaylandServer::wl_keyboard::Resource *Keyboard::focusResource() const
-{
-    return m_focusResource;
-}
-
 void Keyboard::keyboard_bind_resource(wl_keyboard::Resource *resource)
 {
 #ifndef QT_NO_WAYLAND_XKB
@@ -235,12 +221,6 @@ void Keyboard::keyboard_bind_resource(wl_keyboard::Resource *resource)
     checkFocusResource(resource);
 }
 
-void Keyboard::keyboard_destroy_resource(wl_keyboard::Resource *resource)
-{
-    if (m_focusResource == resource)
-        m_focusResource = 0;
-}
-
 void Keyboard::keyboard_release(wl_keyboard::Resource *resource)
 {
     wl_resource_destroy(resource->handle);
@@ -248,8 +228,10 @@ void Keyboard::keyboard_release(wl_keyboard::Resource *resource)
 
 void Keyboard::key(uint32_t serial, uint32_t time, uint32_t key, uint32_t state)
 {
-    if (m_focusResource) {
-        send_key(m_focusResource->handle, serial, time, key, state);
+    if (m_focus) {
+        for (Resource *res : resourceMap().values(m_focus->resource()->client())) {
+            send_key(res->handle, serial, time, key, state);
+        }
     }
 }
 
@@ -278,8 +260,10 @@ void Keyboard::sendKeyEvent(uint code, uint32_t state)
 void Keyboard::modifiers(uint32_t serial, uint32_t mods_depressed,
                          uint32_t mods_latched, uint32_t mods_locked, uint32_t group)
 {
-    if (m_focusResource) {
-        send_modifiers(m_focusResource->handle, serial, mods_depressed, mods_latched, mods_locked, group);
+    if (m_focus) {
+        for (Resource *res : resourceMap().values(m_focus->resource()->client())) {
+            send_modifiers(res->handle, serial, mods_depressed, mods_latched, mods_locked, group);
+        }
     }
 }
 
@@ -332,8 +316,12 @@ void Keyboard::updateKeymap()
     }
 
     xkb_state_update_mask(m_state, 0, m_modsLatched, m_modsLocked, 0, 0, 0);
-    if (m_focusResource)
-        sendKeyModifiers(m_focusResource, wl_display_next_serial(m_compositor->wl_display()));
+    uint32_t serial = wl_display_next_serial(m_compositor->wl_display());
+    if (m_focus) {
+        for (Resource *res : resourceMap().values(m_focus->resource()->client())) {
+            sendKeyModifiers(res, serial);
+        }
+    }
 #endif
 }
 

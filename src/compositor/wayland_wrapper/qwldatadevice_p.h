@@ -71,7 +71,7 @@ class DataDevice : public QtWaylandServer::wl_data_device, public PointerGrabber
 public:
     DataDevice(InputDevice *inputDevice);
 
-    void setFocus(QtWaylandServer::wl_keyboard::Resource *focusResource);
+    void setFocus(Surface *focusSurface);
 
     void setDragFocus(QWaylandSurfaceView *focus, const QPointF &localPosition);
 

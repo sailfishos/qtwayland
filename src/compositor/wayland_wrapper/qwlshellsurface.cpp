@@ -544,7 +544,7 @@ void ShellSurfacePopupGrabber::motion(uint32_t time)
 
 void ShellSurfacePopupGrabber::button(uint32_t time, Qt::MouseButton button, uint32_t state)
 {
-    if (m_pointer->focusResource()) {
+    if (m_pointer->focusSurface()) {
         m_pointer->sendButton(time, button, state);
     } else if (state == QtWaylandServer::wl_pointer::button_state_pressed &&
                (m_initialUp || time - m_pointer->grabTime() > 500) &&
