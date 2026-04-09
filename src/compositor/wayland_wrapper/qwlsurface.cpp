@@ -139,7 +139,10 @@ Surface::Surface(struct wl_client *client, uint32_t id, int version, QWaylandCom
 
 Surface::~Surface()
 {
-    delete m_subSurface;
+    foreach (SubSurface *ss, m_subsurfaces)
+        ss->destroy();
+    if (m_subSurface)
+        m_subSurface->destroy();
 
     m_bufferRef = QWaylandBufferRef();
 

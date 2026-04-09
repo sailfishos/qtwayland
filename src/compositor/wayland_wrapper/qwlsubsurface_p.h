@@ -75,6 +75,7 @@ public:
     static const SurfaceRole *role();
 
     void parentCommit();
+    void destroy();
 
 protected:
     void configure(int dx, int dy) Q_DECL_OVERRIDE;

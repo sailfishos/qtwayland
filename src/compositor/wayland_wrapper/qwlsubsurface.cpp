@@ -69,10 +69,7 @@ SubSurface::SubSurface(Surface *surface, Surface *parent, wl_client *client, uin
 
 SubSurface::~SubSurface()
 {
-    qDeleteAll(m_views);
-
-    m_surface->setSubSurface(Q_NULLPTR);
-    m_parent->removeSubSurface(this);
+    destroy();
 }
 
 const SurfaceRole *SubSurface::role()
@@ -86,6 +83,23 @@ void SubSurface::parentCommit()
     foreach (QWaylandSurfaceView *view, m_views) {
         view->setPos(m_position);
     }
+}
+
+void SubSurface::destroy()
+{
+    if (!m_surface)
+        return;
+
+    qDeleteAll(m_views);
+
+    disconnect(m_parent->waylandSurface(), &QWaylandSurface::viewAdded,
+               this, &SubSurface::createSubView);
+
+    m_surface->setSubSurface(Q_NULLPTR);
+    m_parent->removeSubSurface(this);
+
+    m_surface = Q_NULLPTR;
+    m_parent = Q_NULLPTR;
 }
 
 void SubSurface::configure(int dx, int dy)
