@@ -139,7 +139,10 @@ Surface::Surface(struct wl_client *client, uint32_t id, int version, QWaylandCom
 
 Surface::~Surface()
 {
-    delete m_subSurface;
+    foreach (SubSurface *ss, m_subsurfaces)
+        ss->destroy();
+    if (m_subSurface)
+        m_subSurface->destroy();
 
     m_bufferRef = QWaylandBufferRef();
 
@@ -274,6 +277,21 @@ void Surface::setSubSurface(SubSurface *subSurface)
 SubSurface *Surface::subSurface() const
 {
     return m_subSurface;
+}
+
+void Surface::addSubSurface(SubSurface *ss)
+{
+    m_subsurfaces << ss;
+}
+
+void Surface::removeSubSurface(SubSurface *ss)
+{
+    for (QVector<SubSurface *>::iterator i = m_subsurfaces.begin(); i != m_subsurfaces.end(); ++i) {
+        if (*i == ss) {
+            m_subsurfaces.erase(i);
+            return;
+        }
+    }
 }
 
 void Surface::setInputPanelSurface(InputPanelSurface *inputPanelSurface)
@@ -513,6 +531,9 @@ void Surface::surface_commit(Resource *)
     m_pending.offset = QPoint();
     m_pending.newlyAttached = false;
     m_pending.damage = QRegion();
+
+    foreach (SubSurface *ss, m_subsurfaces)
+        ss->parentCommit();
 
     if (m_buffer)
         m_buffer->setCommitted();

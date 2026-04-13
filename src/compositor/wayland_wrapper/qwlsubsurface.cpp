@@ -38,153 +38,127 @@
 **
 ****************************************************************************/
 
+#include <QDebug>
+
 #include "qwlsubsurface_p.h"
 
 #include "qwlcompositor_p.h"
 #include "qwaylandsurface.h"
 #include "qwaylandsurfaceview.h"
 
+#include "qwaylandsurfaceitem.h"
+
 QT_BEGIN_NAMESPACE
 
 namespace QtWayland {
 
-SubSurfaceExtensionGlobal::SubSurfaceExtensionGlobal(Compositor *compositor)
-    : m_compositor(compositor)
+SubSurface::SubSurface(Surface *surface, Surface *parent, wl_client *client, uint32_t id, int version)
+    : QtWaylandServer::wl_subsurface(client, id, version)
+    , m_surface(surface)
+    , m_parent(parent)
+    , m_synchronized(true)
 {
-    wl_global_create(m_compositor->wl_display(),
-                     &qt_sub_surface_extension_interface,
-                     qt_sub_surface_extension_interface.version,
-                     this,
-                     SubSurfaceExtensionGlobal::bind_func);
-}
+    m_surface->setSubSurface(this);
+    parent->addSubSurface(this);
+    QWaylandSurface *p = parent->waylandSurface();
 
-void SubSurfaceExtensionGlobal::bind_func(wl_client *client, void *data, uint32_t version, uint32_t id)
-{
-    Q_UNUSED(version);
-    struct wl_resource *resource = wl_resource_create(client, &qt_sub_surface_extension_interface,version,id);
-    wl_resource_set_implementation(resource, &sub_surface_extension_interface, data, 0);
-}
-
-void SubSurfaceExtensionGlobal::get_sub_surface_aware_surface(wl_client *client, wl_resource *sub_surface_extension_resource, uint32_t id, wl_resource *surface_resource)
-{
-    Q_UNUSED(sub_surface_extension_resource);
-    Surface *surface = Surface::fromResource(surface_resource);
-    new SubSurface(client,id,surface);
-}
-
-const struct qt_sub_surface_extension_interface SubSurfaceExtensionGlobal::sub_surface_extension_interface = {
-    SubSurfaceExtensionGlobal::get_sub_surface_aware_surface
-};
-
-SubSurface::SubSurface(wl_client *client, uint32_t id, Surface *surface)
-    : m_surface(surface)
-    , m_parent(0)
-{
-    surface->setSubSurface(this);
-    m_sub_surface_resource = wl_resource_create(client, &qt_sub_surface_interface, qt_sub_surface_interface.version, id);
-    wl_resource_set_implementation(m_sub_surface_resource, &sub_surface_interface, this, 0);
+    foreach (QWaylandSurfaceView *v, p->views())
+        createSubView(v);
+    connect(p, &QWaylandSurface::viewAdded, this, &SubSurface::createSubView);
 }
 
 SubSurface::~SubSurface()
 {
-    if (m_parent) {
-        m_parent->removeSubSurface(this);
+    destroy();
+}
+
+const SurfaceRole *SubSurface::role()
+{
+    static const SurfaceRole role = { "subsurface" };
+    return &role;
+}
+
+void SubSurface::parentCommit()
+{
+    foreach (QWaylandSurfaceView *view, m_views) {
+        view->setPos(m_position);
     }
-    QLinkedList<QWaylandSurface *>::iterator it;
-    for (it = m_sub_surfaces.begin(); it != m_sub_surfaces.end(); ++it) {
-        (*it)->handle()->subSurface()->parentDestroyed();
-    }
 }
 
-void SubSurface::setSubSurface(SubSurface *subSurface, int x, int y)
+void SubSurface::destroy()
 {
-    if (!m_sub_surfaces.contains(subSurface->m_surface->waylandSurface())) {
-        m_sub_surfaces.append(subSurface->m_surface->waylandSurface());
-        subSurface->setParent(this);
-    }
-    foreach (QWaylandSurfaceView *view, subSurface->m_surface->waylandSurface()->views())
-        view->setPos(QPointF(x,y));
-}
-
-void SubSurface::removeSubSurface(SubSurface *subSurfaces)
-{
-    Q_ASSERT(m_sub_surfaces.contains(subSurfaces->m_surface->waylandSurface()));
-    m_sub_surfaces.removeOne(subSurfaces->m_surface->waylandSurface());
-}
-
-SubSurface *SubSurface::parent() const
-{
-    return m_parent;
-}
-
-void SubSurface::setParent(SubSurface *parent)
-{
-    if (m_parent == parent)
+    if (!m_surface)
         return;
 
-    QWaylandSurface *oldParent = 0;
-    QWaylandSurface *newParent = 0;
+    qDeleteAll(m_views);
 
-    if (m_parent) {
-        oldParent = m_parent->m_surface->waylandSurface();
-        m_parent->removeSubSurface(this);
-    }
-    if (parent) {
-        newParent = parent->m_surface->waylandSurface();
-    }
-    m_parent = parent;
+    disconnect(m_parent->waylandSurface(), &QWaylandSurface::viewAdded,
+               this, &SubSurface::createSubView);
 
-    m_surface->waylandSurface()->parentChanged(newParent,oldParent);
+    m_surface->setSubSurface(Q_NULLPTR);
+    m_parent->removeSubSurface(this);
+
+    m_surface = Q_NULLPTR;
+    m_parent = Q_NULLPTR;
 }
 
-QLinkedList<QWaylandSurface *> SubSurface::subSurfaces() const
+void SubSurface::configure(int dx, int dy)
 {
-    return m_sub_surfaces;
+    Q_UNUSED(dx)
+    Q_UNUSED(dy)
 }
 
-void SubSurface::parentDestroyed()
+void SubSurface::createSubView(QWaylandSurfaceView *view)
 {
-    m_parent = 0;
-}
-void SubSurface::attach_sub_surface(wl_client *client, wl_resource *sub_surface_parent_resource, wl_resource *sub_surface_child_resource, int32_t x, int32_t y)
-{
-    Q_UNUSED(client);
-    SubSurface *parent_sub_surface = static_cast<SubSurface *>(sub_surface_parent_resource->data);
-    SubSurface *child_sub_surface = static_cast<SubSurface *>(sub_surface_child_resource->data);
-    parent_sub_surface->setSubSurface(child_sub_surface,x,y);
+    QWaylandSurfaceView *v = m_surface->compositor()->waylandCompositor()->createView(m_surface->waylandSurface());
+    v->setParentView(view);
+    v->setPos(m_position);
+    m_views << v;
 }
 
-void SubSurface::move_sub_surface(wl_client *client, wl_resource *sub_surface_parent_resource, wl_resource *sub_surface_child_resource, int32_t x, int32_t y)
+void SubSurface::subsurface_destroy_resource(Resource *resource)
 {
-    Q_UNUSED(client);
-    Q_UNUSED(x);
-    Q_UNUSED(y);
-    SubSurface *parent_sub_surface = static_cast<SubSurface *>(sub_surface_parent_resource->data);
-    SubSurface *child_sub_surface = static_cast<SubSurface *>(sub_surface_child_resource->data);
-    Q_UNUSED(parent_sub_surface);
-    Q_UNUSED(child_sub_surface);
+    Q_UNUSED(resource)
+    delete this;
 }
 
-void SubSurface::raise(wl_client *client, wl_resource *sub_surface_parent_resource, wl_resource *sub_surface_child_resource)
+void SubSurface::subsurface_destroy(Resource *resource)
 {
-    Q_UNUSED(client);
-    Q_UNUSED(sub_surface_parent_resource);
-    Q_UNUSED(sub_surface_child_resource);
+    wl_resource_destroy(resource->handle);
 }
 
-void SubSurface::lower(wl_client *client, wl_resource *sub_surface_parent_resource, wl_resource *sub_surface_child_resource)
+void SubSurface::subsurface_set_position(Resource *resource, int32_t x, int32_t y)
 {
-    Q_UNUSED(client);
-    Q_UNUSED(sub_surface_parent_resource);
-    Q_UNUSED(sub_surface_child_resource);
+    Q_UNUSED(resource)
+
+    m_position = QPoint(x, y);
 }
 
-const struct qt_sub_surface_interface SubSurface::sub_surface_interface = {
-    SubSurface::attach_sub_surface,
-    SubSurface::move_sub_surface,
-    SubSurface::raise,
-    SubSurface::lower
-};
+void SubSurface::subsurface_place_above(Resource *resource, ::wl_resource *sibling)
+{
+    Q_UNUSED(resource)
+    Q_UNUSED(sibling)
+    qWarning("wl_subsurface.place_above not implemented");
+}
+
+void SubSurface::subsurface_place_below(Resource *resource, ::wl_resource *sibling)
+{
+    Q_UNUSED(resource)
+    Q_UNUSED(sibling)
+    qWarning("wl_subsurface.place_below not implemented");
+}
+
+void SubSurface::subsurface_set_sync(Resource *resource)
+{
+    Q_UNUSED(resource)
+    qWarning("wl_subsurface.set_sync not implemented");
+}
+
+void SubSurface::subsurface_set_desync(Resource *resource)
+{
+    Q_UNUSED(resource)
+    qWarning("wl_subsurface.set_desync not implemented");
+}
 
 }
 
