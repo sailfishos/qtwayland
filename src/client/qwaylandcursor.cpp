@@ -50,6 +50,10 @@ namespace QtWaylandClient {
 QWaylandCursor::QWaylandCursor(QWaylandScreen *screen)
     : mDisplay(screen->display())
 {
+    if (!mDisplay->shm()) {
+        return;
+    }
+
     //TODO: Make wl_cursor_theme_load arguments configurable here
     QByteArray cursorTheme = qgetenv("XCURSOR_THEME");
     if (cursorTheme.isEmpty())
