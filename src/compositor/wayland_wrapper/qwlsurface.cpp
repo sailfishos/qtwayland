@@ -483,6 +483,16 @@ void Surface::surface_attach(Resource *, struct wl_resource *buffer, int x, int 
 
 void Surface::surface_damage(Resource *, int32_t x, int32_t y, int32_t width, int32_t height)
 {
+    Q_UNUSED(x);
+    Q_UNUSED(y);
+    Q_UNUSED(width);
+    Q_UNUSED(height);
+    // Ignore surface-local damage and damage the entire surface instead.
+    m_pending.damage = infiniteRegion();
+}
+
+void Surface::surface_damage_buffer(Resource *, int32_t x, int32_t y, int32_t width, int32_t height)
+{
     m_pending.damage = m_pending.damage.united(QRect(x, y, width, height));
 }
 

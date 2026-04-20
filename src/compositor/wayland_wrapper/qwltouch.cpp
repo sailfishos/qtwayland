@@ -49,11 +49,12 @@ QT_BEGIN_NAMESPACE
 
 namespace QtWayland {
 
+using QtWaylandServer::wl_surface;
+
 Touch::Touch(Compositor *compositor)
     : wl_touch()
     , m_compositor(compositor)
     , m_focus()
-    , m_focusResource()
     , m_grab(this)
 {
     m_grab->setTouch(this);
@@ -67,7 +68,6 @@ void Touch::setFocus(QWaylandSurfaceView *surface)
         m_focusDestroyListener.listenForDestruction(surface->surface()->handle()->resource()->handle);
 
     m_focus = surface;
-    m_focusResource = surface ? resourceMap().value(surface->surface()->handle()->resource()->client()) : 0;
 }
 
 void Touch::startGrab(TouchGrabber *grab)
@@ -87,13 +87,6 @@ void Touch::focusDestroyed(void *data)
     m_focusDestroyListener.reset();
 
     m_focus = 0;
-    m_focusResource = 0;
-}
-
-void Touch::touch_destroy_resource(Resource *resource)
-{
-    if (m_focusResource == resource)
-        m_focusResource = 0;
 }
 
 void Touch::touch_release(Resource *resource)
@@ -103,14 +96,22 @@ void Touch::touch_release(Resource *resource)
 
 void Touch::sendCancel()
 {
-    if (m_focusResource)
-        send_cancel(m_focusResource->handle);
+    if (!m_focus)
+        return;
+
+    for (Resource *res : resourceMap().values(m_focus->surface()->handle()->resource()->client())) {
+        send_cancel(res->handle);
+    }
 }
 
 void Touch::sendFrame()
 {
-    if (m_focusResource)
-        send_frame(m_focusResource->handle);
+    if (!m_focus)
+        return;
+
+    for (Resource *res : resourceMap().values(m_focus->surface()->handle()->resource()->client())) {
+        send_frame(res->handle);
+    }
 }
 
 void Touch::sendDown(int touch_id, const QPointF &position)
@@ -130,32 +131,40 @@ void Touch::sendUp(int touch_id)
 
 void Touch::down(uint32_t time, int touch_id, const QPointF &position)
 {
-    if (!m_focusResource || !m_focus)
+    if (!m_focus)
         return;
+
+    wl_surface::Resource *surfaceResource = m_focus->surface()->handle()->resource();
 
     uint32_t serial = wl_display_next_serial(m_compositor->wl_display());
 
-    send_down(m_focusResource->handle, serial, time, m_focus->surface()->handle()->resource()->handle, touch_id,
-              wl_fixed_from_double(position.x()), wl_fixed_from_double(position.y()));
+    for (Resource *res : resourceMap().values(surfaceResource->client())) {
+        send_down(res->handle, serial, time, surfaceResource->handle, touch_id,
+                  wl_fixed_from_double(position.x()), wl_fixed_from_double(position.y()));
+    }
 }
 
 void Touch::up(uint32_t time, int touch_id)
 {
-    if (!m_focusResource)
+    if (!m_focus)
         return;
 
     uint32_t serial = wl_display_next_serial(m_compositor->wl_display());
 
-    send_up(m_focusResource->handle, serial, time, touch_id);
+    for (Resource *res : resourceMap().values(m_focus->surface()->handle()->resource()->client())) {
+        send_up(res->handle, serial, time, touch_id);
+    }
 }
 
 void Touch::motion(uint32_t time, int touch_id, const QPointF &position)
 {
-    if (!m_focusResource)
+    if (!m_focus)
         return;
 
-    send_motion(m_focusResource->handle, time, touch_id,
-                wl_fixed_from_double(position.x()), wl_fixed_from_double(position.y()));
+    for (Resource *res : resourceMap().values(m_focus->surface()->handle()->resource()->client())) {
+        send_motion(res->handle, time, touch_id,
+                    wl_fixed_from_double(position.x()), wl_fixed_from_double(position.y()));
+    }
 }
 
 TouchGrabber::TouchGrabber()
