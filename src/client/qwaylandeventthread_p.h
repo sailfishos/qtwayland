@@ -47,13 +47,12 @@
 
 #include <QObject>
 #include <QMutex>
+#include <QWaitCondition>
 #include <wayland-client.h>
 
 #include <QtWaylandClient/private/qwaylandclientexport_p.h>
 
 QT_BEGIN_NAMESPACE
-
-class QSocketNotifier;
 
 namespace QtWaylandClient {
 
@@ -61,32 +60,39 @@ class Q_WAYLAND_CLIENT_EXPORT QWaylandEventThread : public QObject
 {
     Q_OBJECT
 public:
-    explicit QWaylandEventThread(QObject *parent = 0);
+    explicit QWaylandEventThread(struct wl_display *display, QObject *parent = 0);
     ~QWaylandEventThread();
 
-    void displayConnect();
+    bool isValid() const;
+    int initializationError() const;
+    void start();
 
     wl_display *display() const;
 
     void checkError() const;
+    void eventsDispatched();
+    void stop();
 
 private slots:
     void readWaylandEvents();
-
-    void waylandDisplayConnect();
 
 signals:
     void newEventsRead();
     void fatalError();
 
 private:
+    bool waitForEventsDispatched();
+    bool flushDisplay(bool *waitingForWrite);
 
     struct wl_display *m_display;
     int m_fileDescriptor;
+    int m_stopPipe[2];
+    int m_initializationError;
 
-    QSocketNotifier *m_readNotifier;
-
-    QMutex *m_displayLock;
+    QMutex m_mutex;
+    QWaitCondition m_waitCondition;
+    bool m_waitingForEventsDispatched;
+    bool m_stopping;
 
 };
 

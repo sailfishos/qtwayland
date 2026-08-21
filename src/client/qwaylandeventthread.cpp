@@ -32,37 +32,54 @@
 ****************************************************************************/
 
 #include "qwaylandeventthread_p.h"
-#include <QtCore/QSocketNotifier>
-#include <QCoreApplication>
 
-#include <unistd.h>
+#include <QtCore/private/qcore_unix_p.h>
+
 #include <fcntl.h>
-#include <stdio.h>
 #include <errno.h>
+#include <poll.h>
 
 QT_BEGIN_NAMESPACE
 
 namespace QtWaylandClient {
 
-QWaylandEventThread::QWaylandEventThread(QObject *parent)
+QWaylandEventThread::QWaylandEventThread(struct wl_display *display, QObject *parent)
     : QObject(parent)
-    , m_display(0)
-    , m_fileDescriptor(-1)
-    , m_readNotifier(0)
-    , m_displayLock(new QMutex)
+    , m_display(display)
+    , m_fileDescriptor(wl_display_get_fd(display))
+    , m_initializationError(0)
+    , m_waitingForEventsDispatched(false)
+    , m_stopping(false)
 {
+    m_stopPipe[0] = -1;
+    m_stopPipe[1] = -1;
+    if (qt_safe_pipe(m_stopPipe, O_NONBLOCK) < 0)
+        m_initializationError = errno;
 }
 
 QWaylandEventThread::~QWaylandEventThread()
 {
-    delete m_displayLock;
-    wl_display_disconnect(m_display);
+    if (m_stopPipe[0] != -1)
+        qt_safe_close(m_stopPipe[0]);
+    if (m_stopPipe[1] != -1)
+        qt_safe_close(m_stopPipe[1]);
+    if (m_display)
+        wl_display_disconnect(m_display);
 }
 
-void QWaylandEventThread::displayConnect()
+bool QWaylandEventThread::isValid() const
 {
-    m_displayLock->lock();
-    QMetaObject::invokeMethod(this, "waylandDisplayConnect", Qt::QueuedConnection);
+    return m_initializationError == 0;
+}
+
+int QWaylandEventThread::initializationError() const
+{
+    return m_initializationError;
+}
+
+void QWaylandEventThread::start()
+{
+    QMetaObject::invokeMethod(this, "readWaylandEvents", Qt::QueuedConnection);
 }
 
 // ### be careful what you do, this function may also be called from other
@@ -78,32 +95,138 @@ void QWaylandEventThread::checkError() const
     }
 }
 
-void QWaylandEventThread::readWaylandEvents()
+void QWaylandEventThread::eventsDispatched()
 {
-    if (wl_display_prepare_read(m_display) == 0) {
-        wl_display_read_events(m_display);
+    QMutexLocker locker(&m_mutex);
+    if (m_waitingForEventsDispatched) {
+        m_waitingForEventsDispatched = false;
+        m_waitCondition.wakeOne();
     }
-    emit newEventsRead();
 }
 
-void QWaylandEventThread::waylandDisplayConnect()
+void QWaylandEventThread::stop()
 {
-    m_display = wl_display_connect(NULL);
-    if (m_display == NULL) {
-        qErrnoWarning(errno, "Failed to create display");
-        ::exit(1);
+    {
+        QMutexLocker locker(&m_mutex);
+        if (m_stopping)
+            return;
+        m_stopping = true;
+        m_waitCondition.wakeAll();
     }
-    m_displayLock->unlock();
 
-    m_fileDescriptor = wl_display_get_fd(m_display);
+    if (m_stopPipe[1] != -1) {
+        char byte = 0;
+        qt_safe_write(m_stopPipe[1], &byte, sizeof byte);
+    }
+}
 
-    m_readNotifier = new QSocketNotifier(m_fileDescriptor, QSocketNotifier::Read, this);
-    connect(m_readNotifier, SIGNAL(activated(int)), this, SLOT(readWaylandEvents()));
+bool QWaylandEventThread::waitForEventsDispatched()
+{
+    // Do not read again until the thread that owns the default queue has
+    // dispatched everything the last read may have put there. Besides being
+    // required before prepare_read() can succeed again, this keeps at most one
+    // queued newEventsRead() signal while that thread is blocked.
+    {
+        QMutexLocker locker(&m_mutex);
+        if (m_stopping)
+            return false;
+        m_waitingForEventsDispatched = true;
+    }
+
+    emit newEventsRead();
+
+    QMutexLocker locker(&m_mutex);
+    while (m_waitingForEventsDispatched && !m_stopping)
+        m_waitCondition.wait(&m_mutex);
+
+    return !m_stopping;
+}
+
+bool QWaylandEventThread::flushDisplay(bool *waitingForWrite)
+{
+    *waitingForWrite = false;
+
+    int ret = wl_display_flush(m_display);
+    if (ret >= 0)
+        return true;
+    if (errno == EAGAIN) {
+        *waitingForWrite = true;
+        return true;
+    }
+
+    checkError();
+    return false;
+}
+
+void QWaylandEventThread::readWaylandEvents()
+{
+    for (;;) {
+        // Keep the read preparation active across poll(). This prevents
+        // another reader of the shared display from draining the fd and
+        // leaving events on our queue without anything to wake its owner.
+        while (wl_display_prepare_read(m_display) != 0) {
+            if (!waitForEventsDispatched())
+                return;
+        }
+
+        bool waitingForWrite;
+        if (!flushDisplay(&waitingForWrite)) {
+            wl_display_cancel_read(m_display);
+            emit fatalError();
+            return;
+        }
+
+        for (;;) {
+            struct pollfd pollFds[2];
+            pollFds[0].fd = m_fileDescriptor;
+            pollFds[0].events = POLLIN | (waitingForWrite ? POLLOUT : 0);
+            pollFds[0].revents = 0;
+            pollFds[1].fd = m_stopPipe[0];
+            pollFds[1].events = POLLIN;
+            pollFds[1].revents = 0;
+
+            int ret;
+            do {
+                ret = poll(pollFds, 2, -1);
+            } while (ret < 0 && errno == EINTR);
+
+            if (ret < 0) {
+                wl_display_cancel_read(m_display);
+                qErrnoWarning(errno, "Failed to poll the Wayland connection");
+                emit fatalError();
+                return;
+            }
+
+            if (pollFds[1].revents) {
+                wl_display_cancel_read(m_display);
+                return;
+            }
+
+            if (pollFds[0].revents & POLLOUT) {
+                if (!flushDisplay(&waitingForWrite)) {
+                    wl_display_cancel_read(m_display);
+                    emit fatalError();
+                    return;
+                }
+            }
+
+            if (pollFds[0].revents & (POLLIN | POLLERR | POLLHUP | POLLNVAL)) {
+                if (wl_display_read_events(m_display) < 0) {
+                    checkError();
+                    emit fatalError();
+                    return;
+                }
+                break;
+            }
+        }
+
+        if (!waitForEventsDispatched())
+            return;
+    }
 }
 
 wl_display *QWaylandEventThread::display() const
 {
-    QMutexLocker displayLock(m_displayLock);
     return m_display;
 }
 

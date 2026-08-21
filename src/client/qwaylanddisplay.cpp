@@ -59,6 +59,7 @@
 #include <QtWaylandClient/private/qwayland-xdg-shell.h>
 
 #include <QtCore/QAbstractEventDispatcher>
+#include <QtCore/QThread>
 #include <QtGui/private/qguiapplication_p.h>
 
 #include <QtCore/QDebug>
@@ -130,20 +131,34 @@ QWaylandDisplay::QWaylandDisplay(QWaylandIntegration *waylandIntegration)
 {
     qRegisterMetaType<uint32_t>("uint32_t");
 
-    mEventThreadObject = new QWaylandEventThread(0);
+    mDisplay = wl_display_connect(NULL);
+    if (!mDisplay) {
+        qErrnoWarning(errno, "Failed to create display");
+        ::exit(1);
+    }
+
+    mEventThreadObject = new QWaylandEventThread(mDisplay, 0);
+    if (!mEventThreadObject->isValid()) {
+        qErrnoWarning(mEventThreadObject->initializationError(),
+                      "Failed to create the Wayland event thread pipe");
+        delete mEventThreadObject;
+        ::exit(1);
+    }
+
     mEventThread = new QThread(this);
     mEventThread->setObjectName(QStringLiteral("QtWayland"));
     mEventThreadObject->moveToThread(mEventThread);
-    mEventThread->start();
-
-    mEventThreadObject->displayConnect();
-    mDisplay = mEventThreadObject->display(); //blocks until display is available
 
     struct ::wl_registry *registry = wl_display_get_registry(mDisplay);
     init(registry);
 
-    connect(mEventThreadObject, SIGNAL(newEventsRead()), this, SLOT(flushRequests()));
-    connect(mEventThreadObject, &QWaylandEventThread::fatalError, this, &QWaylandDisplay::exitWithError);
+    connect(mEventThreadObject, &QWaylandEventThread::newEventsRead,
+            this, &QWaylandDisplay::flushRequests);
+    connect(mEventThreadObject, &QWaylandEventThread::fatalError,
+            this, &QWaylandDisplay::exitWithError);
+
+    mEventThread->start();
+    mEventThreadObject->start();
 
     mWindowManagerIntegration.reset(new QWaylandWindowManagerIntegration(this));
 
@@ -162,6 +177,7 @@ QWaylandDisplay::~QWaylandDisplay(void)
 #ifndef QT_NO_DRAGANDDROP
     delete mDndSelectionHandler.take();
 #endif
+    mEventThreadObject->stop();
     mEventThread->quit();
     mEventThread->wait();
     delete mEventThreadObject;
@@ -174,7 +190,12 @@ void QWaylandDisplay::flushRequests()
         exitWithError();
     }
 
-    wl_display_flush(mDisplay);
+    mEventThreadObject->eventsDispatched();
+
+    if (wl_display_flush(mDisplay) < 0 && errno != EAGAIN) {
+        mEventThreadObject->checkError();
+        exitWithError();
+    }
 }
 
 
@@ -188,6 +209,7 @@ void QWaylandDisplay::blockingReadEvents()
 
 void QWaylandDisplay::exitWithError()
 {
+    mEventThreadObject->stop();
     mEventThread->quit();
     mEventThread->wait();
     ::exit(1);

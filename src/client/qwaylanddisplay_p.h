@@ -65,6 +65,7 @@ QT_BEGIN_NAMESPACE
 class QAbstractEventDispatcher;
 class QSocketNotifier;
 class QPlatformScreen;
+class QThread;
 
 namespace QtWayland {
     class qt_output_extension;
