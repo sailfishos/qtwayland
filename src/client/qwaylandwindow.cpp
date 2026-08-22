@@ -50,6 +50,7 @@
 
 #include <QtCore/QFileInfo>
 #include <QtCore/QPointer>
+#include <QtCore/QElapsedTimer>
 #include <QtGui/QWindow>
 
 #include <QGuiApplication>
@@ -476,14 +477,44 @@ void QWaylandWindow::frameCallback(void *data, struct wl_callback *callback, uin
 
 QMutex QWaylandWindow::mFrameSyncMutex;
 
+// How long to wait for the compositor's frame callback before giving up.
+// mFrameSyncMutex is shared by every QWaylandWindow in the process, and
+// the wait below drives the process-wide Wayland display connection's
+// reader/prepare_read protocol - blocking here indefinitely (as this
+// used to) starves every other window/thread that needs that connection
+// if the callback is ever slow or simply never arrives (e.g. a paused,
+// off-screen, or otherwise deprioritized surface). 100ms matches the
+// budget upstream Qt itself settled on for the equivalent situation.
+static const int FrameSyncTimeoutMs = 100;
+
 void QWaylandWindow::waitForFrameSync()
 {
     QMutexLocker locker(&mFrameSyncMutex);
     if (!mWaitingForFrameSync)
         return;
     mDisplay->flushRequests();
-    while (mWaitingForFrameSync)
-        mDisplay->blockingReadEvents();
+
+    QElapsedTimer timer;
+    timer.start();
+    while (mWaitingForFrameSync) {
+        int remaining = FrameSyncTimeoutMs - int(timer.elapsed());
+        if (remaining <= 0)
+            break;
+        mDisplay->blockingReadEventsWithTimeout(remaining);
+    }
+
+    if (mWaitingForFrameSync) {
+        // Gave up waiting. Forget the outstanding callback rather than
+        // continuing to honor it - if it does still arrive later,
+        // frameCallback() already checks the callback pointer matches
+        // before acting on it, so destroying ours here is safe. The
+        // next damage() call will simply request a fresh one.
+        mWaitingForFrameSync = false;
+        if (mFrameCallback) {
+            wl_callback_destroy(mFrameCallback);
+            mFrameCallback = 0;
+        }
+    }
 }
 
 QMargins QWaylandWindow::frameMargins() const

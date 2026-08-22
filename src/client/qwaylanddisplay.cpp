@@ -63,6 +63,7 @@
 #include <QtCore/QDebug>
 
 #include <errno.h>
+#include <poll.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -172,7 +173,55 @@ void QWaylandDisplay::checkError() const
 void QWaylandDisplay::flushRequests()
 {
     if (wl_display_prepare_read(mDisplay) == 0) {
-        wl_display_read_events(mDisplay);
+        // Between prepare_read() and read_events() we must flush, then
+        // check that there is actually something to read.
+        //
+        // Flush first: read_events() can end up waiting on a reply to a
+        // request that is still sitting in our outgoing buffer, which the
+        // compositor cannot answer until it has actually been written.
+        // Flushing only after the read (as this used to) is too late.
+        //
+        // Then poll with a zero timeout, and only commit to the read if
+        // the socket is readable. libwayland's own physical recv() is
+        // non-blocking (MSG_DONTWAIT), so an unconditional read_events()
+        // doesn't wedge in the kernel - but the reader role it's part of
+        // is process-wide: if another thread sharing this connection
+        // still has an outstanding prepare_read() of its own when we
+        // call read_events(), reader_count doesn't reach zero on our
+        // decrement, and we instead sleep on reader_cond until whichever
+        // thread does bring it to zero finishes - for as long as that
+        // takes. A correctly written third party (e.g. GStreamer's gst-gl
+        // Wayland event source, when it shares this display) prepares a
+        // read and then sits in its own main loop's poll() until the
+        // compositor has something to say, only cancelling if it does
+        // not. While the compositor is quiet - a paused video surface,
+        // or preroll before the first frame - that can be a long time,
+        // and every such wait here blocks the whole GUI thread; observed
+        // as multi-second application freezes.
+        //
+        // If the fd is readable we can safely proceed: whoever else
+        // holds a slot is polling the same fd and will therefore wake
+        // and complete their side too. If it is not readable there is
+        // nothing to gain by waiting - back out with cancel_read() (the
+        // only way to release the slot without corrupting reader_count)
+        // and dispatch whatever is already queued. We are called again
+        // from the QSocketNotifier the moment the fd does become
+        // readable, so nothing is lost.
+        wl_display_flush(mDisplay);
+
+        struct pollfd pfd;
+        pfd.fd = wl_display_get_fd(mDisplay);
+        pfd.events = POLLIN;
+        pfd.revents = 0;
+
+        if (poll(&pfd, 1, 0) > 0) {
+            if (wl_display_read_events(mDisplay) < 0) {
+                checkError();
+                exitWithError();
+            }
+        } else {
+            wl_display_cancel_read(mDisplay);
+        }
     }
 
     if (wl_display_dispatch_pending(mDisplay) < 0) {
@@ -190,6 +239,60 @@ void QWaylandDisplay::blockingReadEvents()
         checkError();
         exitWithError();
     }
+}
+
+// Like blockingReadEvents(), but bounded: if no events arrive within
+// timeoutMs, gives up and returns false instead of blocking forever.
+// Callers that can legitimately go without a response (e.g. waiting on
+// a compositor frame callback that may never come while a surface is
+// paused/not visible) must use this instead of blockingReadEvents(),
+// since an unbounded wait here starves every other thread that shares
+// this display connection - the reader/prepare_read protocol is
+// process-wide, not per-caller.
+//
+// Correctness note: on timeout we must call wl_display_cancel_read()
+// to undo the wl_display_prepare_read() below. Skipping that (or trying
+// to "reclaim" the read some other way) corrupts the display's internal
+// reader_count bookkeeping - confirmed the hard way in a throwaway
+// experiment that made reader_count go negative. cancel_read() is the
+// only safe way to back out of a prepared read.
+bool QWaylandDisplay::blockingReadEventsWithTimeout(int timeoutMs)
+{
+    if (wl_display_prepare_read(mDisplay) != 0) {
+        // Events are already queued locally; dispatch those instead of
+        // trying to read more from the socket.
+        if (wl_display_dispatch_pending(mDisplay) < 0) {
+            checkError();
+            exitWithError();
+        }
+        return true;
+    }
+
+    wl_display_flush(mDisplay);
+
+    struct pollfd pfd;
+    pfd.fd = wl_display_get_fd(mDisplay);
+    pfd.events = POLLIN;
+    pfd.revents = 0;
+
+    int ret = poll(&pfd, 1, timeoutMs);
+
+    if (ret <= 0) {
+        wl_display_cancel_read(mDisplay);
+        return false;
+    }
+
+    if (wl_display_read_events(mDisplay) < 0) {
+        checkError();
+        exitWithError();
+    }
+
+    if (wl_display_dispatch_pending(mDisplay) < 0) {
+        checkError();
+        exitWithError();
+    }
+
+    return true;
 }
 
 void QWaylandDisplay::exitWithError()

@@ -174,6 +174,7 @@ public:
 
 public slots:
     void blockingReadEvents();
+    bool blockingReadEventsWithTimeout(int timeoutMs);
     void flushRequests();
 
 private:
