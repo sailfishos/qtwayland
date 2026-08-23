@@ -65,6 +65,7 @@ QT_BEGIN_NAMESPACE
 class QAbstractEventDispatcher;
 class QSocketNotifier;
 class QPlatformScreen;
+class QThread;
 
 namespace QtWayland {
     class qt_output_extension;
@@ -179,7 +180,6 @@ public slots:
 private:
     void waitForScreens();
     void exitWithError();
-    void checkError() const;
 
     void handleWaylandSync();
     void requestWaylandSync();
@@ -192,6 +192,8 @@ private:
     struct wl_display *mDisplay;
     QtWayland::wl_compositor mCompositor;
     struct wl_shm *mShm;
+    QThread *mEventThread;
+    QWaylandEventThread *mEventThreadObject;
     QList<QWaylandScreen *> mScreens;
     QList<QWaylandInputDevice *> mInputDevices;
     QList<Listener> mRegistryListeners;

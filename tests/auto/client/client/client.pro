@@ -2,7 +2,7 @@ CONFIG += testcase link_pkgconfig
 TARGET = tst_client
 
 QT += testlib
-QT += core-private gui-private
+QT += core-private gui-private waylandclient-private
 
 !contains(QT_CONFIG, no-pkg-config) {
     PKGCONFIG += wayland-client wayland-server
