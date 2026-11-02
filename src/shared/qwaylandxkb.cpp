@@ -137,7 +137,13 @@ static const uint32_t KeyTbl[] = {
 
     XKB_KEY_XF86Eject,               Qt::Key_Eject,
 
+    // Headset button
     XKB_KEY_XF86Phone,               Qt::Key_ToggleCallHangup,
+
+    // Keypad call and end call keys
+    XKB_KEY_XF86Send,                Qt::Key_Call,
+    XKB_KEY_XF86PowerOff,            Qt::Key_PowerOff,
+
     XKB_KEY_XF86Back,                Qt::Key_Back,
     XKB_KEY_XF86MenuKB,              Qt::Key_MenuKB,
 
