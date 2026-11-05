@@ -33,6 +33,7 @@
 
 #include "qwaylanddisplay_p.h"
 
+#include "qwaylandeventthread_p.h"
 #include "qwaylandintegration_p.h"
 #include "qwaylandwindow_p.h"
 #include "qwaylandscreen_p.h"
@@ -58,6 +59,7 @@
 #include <QtWaylandClient/private/qwayland-xdg-shell.h>
 
 #include <QtCore/QAbstractEventDispatcher>
+#include <QtCore/QThread>
 #include <QtGui/private/qguiapplication_p.h>
 
 #include <QtCore/QDebug>
@@ -130,13 +132,33 @@ QWaylandDisplay::QWaylandDisplay(QWaylandIntegration *waylandIntegration)
     qRegisterMetaType<uint32_t>("uint32_t");
 
     mDisplay = wl_display_connect(NULL);
-    if (mDisplay == NULL) {
+    if (!mDisplay) {
         qErrnoWarning(errno, "Failed to create display");
         ::exit(1);
     }
 
+    mEventThreadObject = new QWaylandEventThread(mDisplay, 0);
+    if (!mEventThreadObject->isValid()) {
+        qErrnoWarning(mEventThreadObject->initializationError(),
+                      "Failed to create the Wayland event thread pipe");
+        delete mEventThreadObject;
+        ::exit(1);
+    }
+
+    mEventThread = new QThread(this);
+    mEventThread->setObjectName(QStringLiteral("QtWayland"));
+    mEventThreadObject->moveToThread(mEventThread);
+
     struct ::wl_registry *registry = wl_display_get_registry(mDisplay);
     init(registry);
+
+    connect(mEventThreadObject, &QWaylandEventThread::newEventsRead,
+            this, &QWaylandDisplay::flushRequests);
+    connect(mEventThreadObject, &QWaylandEventThread::fatalError,
+            this, &QWaylandDisplay::exitWithError);
+
+    mEventThread->start();
+    mEventThreadObject->start();
 
     mWindowManagerIntegration.reset(new QWaylandWindowManagerIntegration(this));
 
@@ -155,45 +177,41 @@ QWaylandDisplay::~QWaylandDisplay(void)
 #ifndef QT_NO_DRAGANDDROP
     delete mDndSelectionHandler.take();
 #endif
-    wl_display_disconnect(mDisplay);
-}
-
-void QWaylandDisplay::checkError() const
-{
-    int ecode = wl_display_get_error(mDisplay);
-    if ((ecode == EPIPE || ecode == ECONNRESET)) {
-        // special case this to provide a nicer error
-        qWarning("The Wayland connection broke. Did the Wayland compositor die?");
-    } else {
-        qErrnoWarning(ecode, "The Wayland connection experienced a fatal error");
-    }
+    mEventThreadObject->stop();
+    mEventThread->quit();
+    mEventThread->wait();
+    delete mEventThreadObject;
 }
 
 void QWaylandDisplay::flushRequests()
 {
-    if (wl_display_prepare_read(mDisplay) == 0) {
-        wl_display_read_events(mDisplay);
-    }
-
     if (wl_display_dispatch_pending(mDisplay) < 0) {
-        checkError();
+        mEventThreadObject->checkError();
         exitWithError();
     }
 
-    wl_display_flush(mDisplay);
+    mEventThreadObject->eventsDispatched();
+
+    if (wl_display_flush(mDisplay) < 0 && errno != EAGAIN) {
+        mEventThreadObject->checkError();
+        exitWithError();
+    }
 }
 
 
 void QWaylandDisplay::blockingReadEvents()
 {
     if (wl_display_dispatch(mDisplay) < 0) {
-        checkError();
+        mEventThreadObject->checkError();
         exitWithError();
     }
 }
 
 void QWaylandDisplay::exitWithError()
 {
+    mEventThreadObject->stop();
+    mEventThread->quit();
+    mEventThread->wait();
     ::exit(1);
 }
 

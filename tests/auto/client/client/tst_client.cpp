@@ -33,17 +33,263 @@
 
 #include "mockcompositor.h"
 
+#include <QtWaylandClient/private/qwaylandeventthread_p.h>
+#include <QtCore/private/qcore_unix_p.h>
+
 #include <QBackingStore>
+#include <QAtomicInt>
+#include <QElapsedTimer>
 #include <QPainter>
 #include <QScreen>
+#include <QTemporaryDir>
+#include <QThread>
 #include <QWindow>
 #include <QMimeData>
 #include <QPixmap>
 #include <QDrag>
 
+#include <QtGui/qpa/qplatformnativeinterface.h>
 #include <QtTest/QtTest>
 
+#include <errno.h>
+#include <fcntl.h>
+#include <poll.h>
+
 static const QSize screenSize(1600, 1200);
+
+class EventThreadGuard
+{
+public:
+    EventThreadGuard()
+        : display(wl_display_connect(NULL))
+        , eventThread(display ? new QtWaylandClient::QWaylandEventThread(display) : 0)
+    {
+        if (!eventThread || !eventThread->isValid())
+            return;
+        eventThread->moveToThread(&thread);
+        thread.start();
+        eventThread->start();
+    }
+
+    ~EventThreadGuard()
+    {
+        if (!eventThread)
+            return;
+        eventThread->stop();
+        thread.quit();
+        thread.wait();
+        delete eventThread;
+    }
+
+    bool isValid() const
+    {
+        return eventThread && eventThread->isValid();
+    }
+
+    QThread thread;
+    wl_display *display;
+    QtWaylandClient::QWaylandEventThread *eventThread;
+};
+
+class ForeignReader : public QThread
+{
+public:
+    ForeignReader(wl_display *display, wl_event_queue *queue)
+        : m_display(display)
+        , m_queue(queue)
+        , m_initializationError(0)
+        , m_ready(false)
+        , m_prepared(false)
+        , m_stopping(0)
+        , m_readResult(-1)
+        , m_dispatchResult(-1)
+    {
+        m_stopPipe[0] = -1;
+        m_stopPipe[1] = -1;
+        if (qt_safe_pipe(m_stopPipe, O_NONBLOCK) < 0)
+            m_initializationError = errno;
+    }
+
+    ~ForeignReader()
+    {
+        stop();
+        wait();
+        if (m_stopPipe[0] != -1)
+            qt_safe_close(m_stopPipe[0]);
+        if (m_stopPipe[1] != -1)
+            qt_safe_close(m_stopPipe[1]);
+    }
+
+    bool isValid() const
+    {
+        return m_initializationError == 0;
+    }
+
+    bool waitUntilPrepared()
+    {
+        QElapsedTimer timer;
+        timer.start();
+
+        QMutexLocker locker(&m_mutex);
+        while (!m_ready) {
+            qint64 remaining = 5000 - timer.elapsed();
+            if (remaining <= 0
+                    || !m_waitCondition.wait(&m_mutex, static_cast<unsigned long>(remaining)))
+                break;
+        }
+        return m_prepared;
+    }
+
+    int readResult() const { return m_readResult; }
+    int dispatchResult() const { return m_dispatchResult; }
+
+    void stop()
+    {
+        if (!m_stopping.testAndSetOrdered(0, 1))
+            return;
+
+        if (m_stopPipe[1] != -1) {
+            char byte = 0;
+            qt_safe_write(m_stopPipe[1], &byte, sizeof byte);
+        }
+    }
+
+protected:
+    void run() Q_DECL_OVERRIDE
+    {
+        while (wl_display_prepare_read_queue(m_display, m_queue) != 0) {
+            if (m_stopping.loadAcquire()) {
+                setPrepared(false);
+                return;
+            }
+            if (wl_display_dispatch_queue_pending(m_display, m_queue) < 0) {
+                setPrepared(false);
+                return;
+            }
+        }
+
+        if (m_stopping.loadAcquire()) {
+            wl_display_cancel_read(m_display);
+            setPrepared(false);
+            return;
+        }
+
+        setPrepared(true);
+
+        struct pollfd pollFds[2];
+        pollFds[0].fd = wl_display_get_fd(m_display);
+        pollFds[0].events = POLLIN | POLLERR | POLLHUP;
+        pollFds[0].revents = 0;
+        pollFds[1].fd = m_stopPipe[0];
+        pollFds[1].events = POLLIN;
+        pollFds[1].revents = 0;
+
+        int ret;
+        do {
+            ret = poll(pollFds, 2, 5000);
+        } while (ret < 0 && errno == EINTR);
+
+        if (ret <= 0 || pollFds[1].revents
+                || !(pollFds[0].revents & (POLLIN | POLLERR | POLLHUP))) {
+            wl_display_cancel_read(m_display);
+            return;
+        }
+
+        m_readResult = wl_display_read_events(m_display);
+        if (m_readResult == 0)
+            m_dispatchResult = wl_display_dispatch_queue_pending(m_display, m_queue);
+    }
+
+private:
+    void setPrepared(bool prepared)
+    {
+        QMutexLocker locker(&m_mutex);
+        m_prepared = prepared;
+        m_ready = true;
+        m_waitCondition.wakeAll();
+    }
+
+    wl_display *m_display;
+    wl_event_queue *m_queue;
+    int m_stopPipe[2];
+    int m_initializationError;
+    QMutex m_mutex;
+    QWaitCondition m_waitCondition;
+    bool m_ready;
+    bool m_prepared;
+    QAtomicInt m_stopping;
+    int m_readResult;
+    int m_dispatchResult;
+};
+
+class EventQueueGuard
+{
+public:
+    explicit EventQueueGuard(wl_display *display)
+        : m_queue(wl_display_create_queue(display))
+    {
+    }
+
+    ~EventQueueGuard()
+    {
+        if (m_queue)
+            wl_event_queue_destroy(m_queue);
+    }
+
+    bool isValid() const { return m_queue; }
+    wl_event_queue *queue() const { return m_queue; }
+
+private:
+    Q_DISABLE_COPY(EventQueueGuard)
+    wl_event_queue *m_queue;
+};
+
+class SyncCallback
+{
+public:
+    SyncCallback(wl_display *display, wl_event_queue *queue = 0)
+        : m_callback(wl_display_sync(display))
+        , m_done(0)
+    {
+        if (!m_callback)
+            return;
+        if (queue)
+            wl_proxy_set_queue(reinterpret_cast<wl_proxy *>(m_callback), queue);
+        if (wl_callback_add_listener(m_callback, &syncListener, this) != 0) {
+            wl_callback_destroy(m_callback);
+            m_callback = 0;
+        }
+    }
+
+    ~SyncCallback()
+    {
+        if (m_callback)
+            wl_callback_destroy(m_callback);
+    }
+
+    bool isValid() const { return m_callback; }
+    int isDone() const { return m_done.loadAcquire(); }
+
+private:
+    static void done(void *data, struct wl_callback *callback, uint32_t serial)
+    {
+        Q_UNUSED(serial)
+        SyncCallback *sync = static_cast<SyncCallback *>(data);
+        sync->m_callback = 0;
+        sync->m_done.storeRelease(1);
+        wl_callback_destroy(callback);
+    }
+
+    static const struct wl_callback_listener syncListener;
+
+    Q_DISABLE_COPY(SyncCallback)
+    wl_callback *m_callback;
+    QAtomicInt m_done;
+};
+
+const struct wl_callback_listener SyncCallback::syncListener = {
+    SyncCallback::done
+};
 
 class TestWindow : public QWindow
 {
@@ -145,6 +391,8 @@ private slots:
     void createDestroyWindow();
     void events();
     void backingStore();
+    void eventThreadSignalIsBounded();
+    void eventThreadCooperatesWithForeignReader();
     void touchDrag();
     void mouseDrag();
 
@@ -257,6 +505,59 @@ void tst_WaylandClient::backingStore()
     QTRY_VERIFY(surface->image.isNull());
 }
 
+void tst_WaylandClient::eventThreadSignalIsBounded()
+{
+    EventThreadGuard guard;
+    QVERIFY(guard.isValid());
+    int signalCount = 0;
+    QObject signalReceiver;
+    connect(guard.eventThread, &QtWaylandClient::QWaylandEventThread::newEventsRead,
+            &signalReceiver, [&signalCount]() { ++signalCount; });
+
+    wl_display *display = guard.eventThread->display();
+    QVERIFY(wl_display_sync(display));
+    QVERIFY(wl_display_flush(display) >= 0);
+    QTRY_COMPARE(signalCount, 1);
+
+    // Leave the first callback pending and make the socket readable again.
+    // The old notifier implementation repeatedly emitted newEventsRead() in
+    // this state because prepare_read() failed while the fd stayed readable.
+    QVERIFY(wl_display_sync(display));
+    QVERIFY(wl_display_flush(display) >= 0);
+    QTest::qWait(100);
+    QCOMPARE(signalCount, 1);
+}
+
+void tst_WaylandClient::eventThreadCooperatesWithForeignReader()
+{
+    QPlatformNativeInterface *nativeInterface = QGuiApplication::platformNativeInterface();
+    wl_display *display = static_cast<wl_display *>(
+                nativeInterface->nativeResourceForIntegration("display"));
+    QVERIFY(display);
+
+    EventQueueGuard foreignQueue(display);
+    QVERIFY(foreignQueue.isValid());
+
+    SyncCallback foreignCallback(display, foreignQueue.queue());
+    QVERIFY(foreignCallback.isValid());
+    SyncCallback defaultCallback(display);
+    QVERIFY(defaultCallback.isValid());
+
+    ForeignReader foreignReader(display, foreignQueue.queue());
+    QVERIFY(foreignReader.isValid());
+    foreignReader.start();
+    QVERIFY(foreignReader.waitUntilPrepared());
+
+    QVERIFY(wl_display_flush(display) >= 0);
+    compositor->processWaylandEvents();
+
+    QTRY_COMPARE(defaultCallback.isDone(), 1);
+    QVERIFY(foreignReader.wait(6000));
+    QCOMPARE(foreignReader.readResult(), 0);
+    QVERIFY(foreignReader.dispatchResult() >= 0);
+    QCOMPARE(foreignCallback.isDone(), 1);
+}
+
 class DndWindow : public QWindow
 {
     Q_OBJECT
@@ -339,7 +640,10 @@ void tst_WaylandClient::mouseDrag()
 
 int main(int argc, char **argv)
 {
-    setenv("XDG_RUNTIME_DIR", ".", 1);
+    QTemporaryDir runtimeDir;
+    if (!runtimeDir.isValid())
+        return EXIT_FAILURE;
+    qputenv("XDG_RUNTIME_DIR", runtimeDir.path().toLocal8Bit());
     setenv("QT_QPA_PLATFORM", "wayland", 1); // force QGuiApplication to use wayland plugin
 
     // wayland-egl hangs in the test setup when we try to initialize. Until it gets
