@@ -112,13 +112,11 @@ public:
 
 private:
     void focusDestroyed(void *data);
-    void touch_destroy_resource(Resource *resource) Q_DECL_OVERRIDE;
     void touch_release(Resource *resource) Q_DECL_OVERRIDE;
 
     Compositor *m_compositor;
 
     QWaylandSurfaceView *m_focus;
-    Resource *m_focusResource;
     WlListener m_focusDestroyListener;
 
     TouchGrabber *m_grab;

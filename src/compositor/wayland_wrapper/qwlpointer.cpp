@@ -53,6 +53,7 @@ QT_BEGIN_NAMESPACE
 namespace QtWayland {
 
 using QtWaylandServer::wl_keyboard;
+using QtWaylandServer::wl_surface;
 
 static uint32_t toWaylandButton(Qt::MouseButton button)
 {
@@ -94,7 +95,6 @@ Pointer::Pointer(Compositor *compositor, InputDevice *seat)
     , m_grabSerial()
     , m_position(100, 100)
     , m_focus()
-    , m_focusResource()
     , m_current()
     , m_currentPoint()
     , m_buttonCount()
@@ -104,29 +104,33 @@ Pointer::Pointer(Compositor *compositor, InputDevice *seat)
 
 void Pointer::setFocus(QWaylandSurfaceView *surface, const QPointF &position)
 {
-    if (m_focusResource && m_focus != surface) {
+    if (m_focus && m_focus != surface) {
+        wl_surface::Resource *surfaceResource = m_focus->surface()->handle()->resource();
         uint32_t serial = wl_display_next_serial(m_compositor->wl_display());
-        send_leave(m_focusResource->handle, serial, m_focus->surface()->handle()->resource()->handle);
+        for (Resource *res : resourceMap().values(surfaceResource->client())) {
+            send_leave(res->handle, serial, surfaceResource->handle);
+        }
         m_focusDestroyListener.reset();
     }
 
-    Resource *resource = surface ? resourceMap().value(surface->surface()->handle()->resource()->client()) : 0;
-
-    if (resource && (m_focus != surface || resource != m_focusResource)) {
+    if (surface && m_focus != surface) {
+        wl_surface::Resource *surfaceResource = surface->surface()->handle()->resource();
         uint32_t serial = wl_display_next_serial(m_compositor->wl_display());
         Keyboard *keyboard = m_seat->keyboardDevice();
         if (keyboard) {
-            wl_keyboard::Resource *kr = keyboard->resourceMap().value(surface->surface()->handle()->resource()->client());
-            if (kr)
+            for (wl_keyboard::Resource *kr : keyboard->resourceMap().values(surfaceResource->client())) {
                 keyboard->sendKeyModifiers(kr, serial);
+            }
         }
-        send_enter(resource->handle, serial, surface->surface()->handle()->resource()->handle,
-                   wl_fixed_from_double(position.x()), wl_fixed_from_double(position.y()));
 
-        m_focusDestroyListener.listenForDestruction(surface->surface()->handle()->resource()->handle);
+        for (Resource *res : resourceMap().values(surfaceResource->client())) {
+            send_enter(res->handle, serial, surfaceResource->handle,
+                       wl_fixed_from_double(position.x()), wl_fixed_from_double(position.y()));
+        }
+
+        m_focusDestroyListener.listenForDestruction(surfaceResource->handle);
     }
 
-    m_focusResource = resource;
     m_focus = surface;
 }
 
@@ -136,7 +140,6 @@ void Pointer::focusDestroyed(void *data)
     m_focusDestroyListener.reset();
 
     m_focus = 0;
-    m_focusResource = 0;
     setMouseFocus(0, QPointF(), QPointF());
 }
 
@@ -206,17 +209,6 @@ QPointF Pointer::currentPosition() const
     return m_currentPoint;
 }
 
-QtWaylandServer::wl_pointer::Resource *Pointer::focusResource() const
-{
-    return m_focusResource;
-}
-
-void Pointer::pointer_destroy_resource(wl_pointer::Resource *resource)
-{
-    if (m_focusResource == resource)
-        m_focusResource = 0;
-}
-
 void Pointer::pointer_release(wl_pointer::Resource *resource)
 {
     wl_resource_destroy(resource->handle);
@@ -235,7 +227,9 @@ void Pointer::setMouseFocus(QWaylandSurfaceView *surface, const QPointF &localPo
 void Pointer::sendButton(uint32_t time, Qt::MouseButton button, uint32_t state)
 {
     uint32_t serial = wl_display_next_serial(m_compositor->wl_display());
-    send_button(m_focusResource->handle, serial, time, toWaylandButton(button), state);
+    for (Resource *res : resourceMap().values(m_focus->surface()->handle()->resource()->client())) {
+        send_button(res->handle, serial, time, toWaylandButton(button), state);
+    }
 }
 
 void Pointer::sendMousePressEvent(Qt::MouseButton button, const QPointF &localPos, const QPointF &globalPos)
@@ -276,13 +270,15 @@ void Pointer::sendMouseMoveEvent(const QPointF &localPos, const QPointF &globalP
 
 void Pointer::sendMouseWheelEvent(Qt::Orientation orientation, int delta)
 {
-    if (!m_focusResource)
+    if (!m_focus)
         return;
 
     uint32_t time = m_compositor->currentTimeMsecs();
     uint32_t axis = orientation == Qt::Horizontal ? WL_POINTER_AXIS_HORIZONTAL_SCROLL
                                                   : WL_POINTER_AXIS_VERTICAL_SCROLL;
-    send_axis(m_focusResource->handle, time, axis, wl_fixed_from_int(-delta / 12));
+    for (Resource *res : resourceMap().values(m_focus->surface()->handle()->resource()->client())) {
+        send_axis(res->handle, time, axis, wl_fixed_from_int(-delta / 12));
+    }
 }
 
 void Pointer::focus()
@@ -295,16 +291,19 @@ void Pointer::focus()
 
 void Pointer::motion(uint32_t time)
 {
-    if (m_focusResource)
-        send_motion(m_focusResource->handle, time,
+    if (!m_focus)
+        return;
+
+    for (Resource *res : resourceMap().values(m_focus->surface()->handle()->resource()->client())) {
+        send_motion(res->handle, time,
                     wl_fixed_from_double(m_currentPoint.x()),
                     wl_fixed_from_double(m_currentPoint.y()));
-
+    }
 }
 
 void Pointer::button(uint32_t time, Qt::MouseButton button, uint32_t state)
 {
-    if (m_focusResource) {
+    if (m_focus) {
         sendButton(time, button, state);
     }
 

@@ -190,6 +190,8 @@ protected:
                                   struct wl_resource *region) Q_DECL_OVERRIDE;
     void surface_commit(Resource *resource) Q_DECL_OVERRIDE;
     void surface_set_buffer_transform(Resource *resource, int32_t transform) Q_DECL_OVERRIDE;
+    void surface_damage_buffer(Resource *resource,
+                               int32_t x, int32_t y, int32_t width, int32_t height) Q_DECL_OVERRIDE;
 
     Q_DISABLE_COPY(Surface)
 

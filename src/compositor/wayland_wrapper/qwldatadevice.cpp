@@ -72,12 +72,12 @@ DataDevice::DataDevice(InputDevice *inputDevice)
 {
 }
 
-void DataDevice::setFocus(QtWaylandServer::wl_keyboard::Resource *focusResource)
+void DataDevice::setFocus(Surface *focusSurface)
 {
-    if (!focusResource)
+    if (!focusSurface)
         return;
 
-    Resource *resource = resourceMap().value(focusResource->client());
+    Resource *resource = resourceMap().value(focusSurface->resource()->client());
 
     if (!resource)
         return;
@@ -208,8 +208,8 @@ void DataDevice::data_device_set_selection(Resource *, struct ::wl_resource *sou
     if (m_selectionSource)
         m_selectionSource->setDevice(this);
 
-    QtWaylandServer::wl_keyboard::Resource *focusResource = m_inputDevice->keyboardDevice()->focusResource();
-    Resource *resource = focusResource ? resourceMap().value(focusResource->client()) : 0;
+    Surface *focusSurface = m_inputDevice->keyboardDevice()->focus();
+    Resource *resource = focusSurface ? resourceMap().value(focusSurface->resource()->client()) : 0;
 
     if (resource && m_selectionSource) {
         DataOffer *offer = new DataOffer(m_selectionSource, resource);

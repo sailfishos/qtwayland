@@ -194,7 +194,7 @@ void Compositor::init()
     if (socketArg != -1 && socketArg + 1 < arguments.size())
         m_socket_name = arguments.at(socketArg + 1).toLocal8Bit();
 
-    wl_compositor::init(m_display->handle(), 3);
+    wl_compositor::init(m_display->handle(), 4);
     wl_subcompositor::init(m_display->handle(), 1);
 
     m_data_device_manager =  new DataDeviceManager(this);

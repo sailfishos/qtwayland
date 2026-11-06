@@ -115,7 +115,6 @@ public:
     QWaylandSurfaceView *current() const;
     QPointF position() const;
     QPointF currentPosition() const;
-    Resource *focusResource() const;
 
     bool buttonPressed() const;
 
@@ -126,7 +125,6 @@ public:
 protected:
     void pointer_set_cursor(Resource *resource, uint32_t serial, wl_resource *surface, int32_t hotspot_x, int32_t hotspot_y) Q_DECL_OVERRIDE;
     void pointer_release(Resource *resource) Q_DECL_OVERRIDE;
-    void pointer_destroy_resource(Resource *resource) Q_DECL_OVERRIDE;
 
 private:
     void focusDestroyed(void *data);
@@ -142,7 +140,6 @@ private:
     QPointF m_position;
 
     QWaylandSurfaceView *m_focus;
-    Resource *m_focusResource;
 
     QWaylandSurfaceView *m_current;
     QPointF m_currentPoint;
